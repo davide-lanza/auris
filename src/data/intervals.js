@@ -18,13 +18,4 @@ const INTERVAL_DATA = {
   'M10': { name: 'Major 10th',        semitones: 16, anchor: 'Major 3rd an octave higher',      emoji: '🎵', char: 'Wide, bright warmth' },
 };
 
-const INTERVAL_POOL = {
-  1: ['P1','M2','m3','M3','P4','P5'],
-  2: ['P1','M2','m3','M3','P4','P5'],
-  3: ['P1','m2','M2','m3','M3','P4','P5','m6','M6','P8'],
-  4: ['P1','m2','M2','m3','M3','P4','P5','m6','M6','P8'],
-  5: ['P1','m2','M2','m3','M3','P4','TT','P5','m6','M6','m7','M7','P8'],
-  6: ['P1','m2','M2','m3','M3','P4','TT','P5','m6','M6','m7','M7','P8'],
-  7: ['P1','m2','M2','m3','M3','P4','TT','P5','m6','M6','m7','M7','P8','m9','M9','m10','M10'],
-  8: ['P1','m2','M2','m3','M3','P4','TT','P5','m6','M6','m7','M7','P8','m9','M9','m10','M10'],
-};
+// Interval pools per level are now defined in LEVEL_DEFS (src/data/levels.js)

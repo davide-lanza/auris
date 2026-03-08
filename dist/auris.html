@@ -486,16 +486,7 @@ const INTERVAL_DATA = {
   'M10': { name: 'Major 10th',        semitones: 16, anchor: 'Major 3rd an octave higher',      emoji: '🎵', char: 'Wide, bright warmth' },
 };
 
-const INTERVAL_POOL = {
-  1: ['P1','M2','m3','M3','P4','P5'],
-  2: ['P1','M2','m3','M3','P4','P5'],
-  3: ['P1','m2','M2','m3','M3','P4','P5','m6','M6','P8'],
-  4: ['P1','m2','M2','m3','M3','P4','P5','m6','M6','P8'],
-  5: ['P1','m2','M2','m3','M3','P4','TT','P5','m6','M6','m7','M7','P8'],
-  6: ['P1','m2','M2','m3','M3','P4','TT','P5','m6','M6','m7','M7','P8'],
-  7: ['P1','m2','M2','m3','M3','P4','TT','P5','m6','M6','m7','M7','P8','m9','M9','m10','M10'],
-  8: ['P1','m2','M2','m3','M3','P4','TT','P5','m6','M6','m7','M7','P8','m9','M9','m10','M10'],
-};
+// Interval pools per level are now defined in LEVEL_DEFS (src/data/levels.js)
 
 
 /* === data/chords.js === */
@@ -510,16 +501,7 @@ const CHORD_DATA = {
   'halfdim':  { name: 'Half-Diminished',    formula: [0,3,6,10],   symbol: 'ø7',   char: 'Dark, ambiguous, searching',           usage: 'ii° in minor ii–V–i' },
 };
 
-const CHORD_POOL = {
-  1: ['major','minor'],
-  2: ['major','minor'],
-  3: ['major','minor','dim','aug'],
-  4: ['major','minor','dim','aug'],
-  5: ['major','minor','dim','aug','dom7','maj7','min7','halfdim'],
-  6: ['major','minor','dim','aug','dom7','maj7','min7','halfdim'],
-  7: ['major','minor','dim','aug','dom7','maj7','min7','halfdim'],
-  8: ['major','minor','dim','aug','dom7','maj7','min7','halfdim'],
-};
+// Chord pools per level are now defined in LEVEL_DEFS (src/data/levels.js)
 
 
 /* === data/cadences.js === */
@@ -548,16 +530,20 @@ const MODULATION_DATA = {
 
 
 /* === data/levels.js === */
+// ============================================================
+// LEVEL SYSTEM
+// ============================================================
+
 const LEVEL_NAMES = {
-  1: 'Beginner', 2: 'Elementary', 3: 'Pre-Intermediate',
-  4: 'Intermediate', 5: 'Upper-Intermediate', 6: 'Advanced',
-  7: 'Professional', 8: 'Master'
+  1: 'Beginner', 2: 'Beginner', 3: 'Elementary', 4: 'Elementary',
+  5: 'Intermediate', 6: 'Intermediate', 7: 'Advanced', 8: 'Master',
 };
 
+// Area cards on home screen & unlock thresholds
 const AREA_CONFIG = {
   'intervals':  { name: 'Intervals',  icon: '🎵', unlockLevel: 1 },
-  'chords':     { name: 'Chords',     icon: '🎹', unlockLevel: 1 },
-  'cadences':   { name: 'Cadences',   icon: '🔄', unlockLevel: 4 },
+  'chords':     { name: 'Chords',     icon: '🎹', unlockLevel: 2 },
+  'cadences':   { name: 'Cadences',   icon: '🔄', unlockLevel: 5 },
   'modulation': { name: 'Modulation', icon: '🌍', unlockLevel: 7 },
 };
 
@@ -568,8 +554,227 @@ const AREA_COLORS = {
   'modulation': '#E06060',
 };
 
-const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+// Note utilities
+const NOTE_NAMES      = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const NOTE_NAMES_FLAT = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+
+// White key note classes (C major scale: C D E F G A B)
+const WHITE_KEY_CLASSES = [0, 2, 4, 5, 7, 9, 11];
+
+// Note name → chromatic class (0–11)
+const NOTE_NAME_TO_CLASS = {
+  'C': 0, 'D': 2, 'E': 4, 'F': 5, 'G': 7, 'A': 9, 'B': 11,
+  'Bb': 10, 'Eb': 3, 'Ab': 8, 'Db': 1, 'Gb': 6,
+  'F#': 6, 'C#': 1, 'G#': 8, 'D#': 3, 'A#': 10, 'Fs': 6,
+};
+
+// All 7 scale degrees for each major key (chromatic classes 0–11)
+const KEY_SCALES = {
+  'C':  [0, 2, 4, 5, 7, 9, 11],
+  'G':  [7, 9, 11, 0, 2, 4, 6],
+  'F':  [5, 7, 9, 10, 0, 2, 4],
+  'D':  [2, 4, 6, 7, 9, 11, 1],
+  'Bb': [10, 0, 2, 3, 5, 7, 9],
+  'A':  [9, 11, 1, 2, 4, 6, 8],
+  'Eb': [3, 5, 7, 8, 10, 0, 2],
+  'E':  [4, 6, 8, 9, 11, 1, 3],
+  'Ab': [8, 10, 0, 1, 3, 5, 7],
+  'B':  [11, 1, 3, 4, 6, 8, 10],
+  'Db': [1, 3, 5, 6, 8, 10, 0],
+  'Fs': [6, 8, 10, 11, 1, 3, 5],
+};
+
+// Tonic note class for each key (used to pick chord roots at levels 3+)
+const KEY_TONICS = {
+  'C': 0, 'G': 7, 'F': 5, 'D': 2, 'Bb': 10, 'A': 9, 'Eb': 3,
+  'E': 4, 'Ab': 8, 'B': 11, 'Db': 1, 'Fs': 6,
+};
+
+// ============================================================
+// LEVEL DEFINITIONS
+// The single source of truth for what is available at each level.
+//
+// intervals:
+//   ascPool  — intervals available in ascending mode
+//   desPool  — intervals available in descending mode ([] = locked)
+//   harPool  — intervals available in harmonic mode   ([] = locked)
+//
+// chords:
+//   pool       — chord types available
+//   fixedRoots — { chordType: [noteNames] } for explicit root control (levels 1-2)
+//                null = derive roots from keys via KEY_TONICS
+//
+// cadences / modulation: null = not yet unlocked
+// ============================================================
+
+const LEVEL_DEFS = {
+  // ── LEVEL 1 ─────────────────────────────────────────────
+  1: {
+    keys:          ['C'],
+    whiteKeysOnly: true,          // BOTH notes of every interval must be white keys
+    intervals: {
+      ascPool: ['P1', 'M2', 'M3'],
+      desPool: [],                // descending locked
+      harPool: [],                // harmonic locked
+    },
+    chords:     null,             // no chords yet
+    cadences:   null,
+    modulation: null,
+  },
+
+  // ── LEVEL 2 ─────────────────────────────────────────────
+  2: {
+    keys:          ['C'],
+    whiteKeysOnly: true,
+    intervals: {
+      ascPool: ['P1', 'M2', 'm3', 'M3', 'P4', 'P5'],
+      desPool: [],
+      harPool: [],
+    },
+    chords: {
+      pool: ['major', 'minor'],
+      // Diatonic triads of C major — exactly the white-key roots
+      fixedRoots: {
+        major: ['C', 'F', 'G'],
+        minor: ['D', 'E', 'A'],
+      },
+    },
+    cadences:   null,
+    modulation: null,
+  },
+
+  // ── LEVEL 3 ─────────────────────────────────────────────
+  3: {
+    keys:          ['C', 'G', 'F'],
+    whiteKeysOnly: false,
+    intervals: {
+      ascPool: ['P1', 'M2', 'm3', 'M3', 'P4', 'P5', 'M6', 'P8'],
+      desPool: ['M2', 'M3'],      // only these two directions at L3
+      harPool: [],
+    },
+    chords: {
+      pool:       ['major', 'minor', 'dim'],
+      fixedRoots: null,
+    },
+    cadences:   null,
+    modulation: null,
+  },
+
+  // ── LEVEL 4 ─────────────────────────────────────────────
+  4: {
+    keys:          ['C', 'G', 'F', 'D', 'Bb'],
+    whiteKeysOnly: false,
+    intervals: {
+      ascPool: ['P1', 'M2', 'm3', 'M3', 'P4', 'P5', 'M6', 'P8', 'm6', 'M7', 'TT'],
+      desPool: ['P1', 'M2', 'm3', 'M3', 'P4', 'P5', 'M6', 'P8', 'm6', 'M7', 'TT'],
+      harPool: [],
+    },
+    chords: {
+      pool:       ['major', 'minor', 'dim', 'aug'],
+      fixedRoots: null,
+    },
+    cadences:   null,
+    modulation: null,
+  },
+
+  // ── LEVEL 5 ─────────────────────────────────────────────
+  5: {
+    keys:          ['C', 'G', 'F', 'D', 'Bb', 'A', 'Eb'],
+    whiteKeysOnly: false,
+    intervals: {
+      ascPool: ['P1', 'M2', 'm3', 'M3', 'P4', 'P5', 'M6', 'P8', 'm6', 'M7', 'TT'],
+      desPool: ['P1', 'M2', 'm3', 'M3', 'P4', 'P5', 'M6', 'P8', 'm6', 'M7', 'TT'],
+      harPool: ['P1', 'M2', 'm3', 'M3', 'P4', 'P5', 'M6', 'P8', 'm6', 'M7', 'TT'],
+    },
+    chords: {
+      pool:       ['major', 'minor', 'dim', 'aug', 'dom7'],
+      fixedRoots: null,
+    },
+    cadences: {
+      pool: ['perfect', 'imperfect'],
+    },
+    modulation: null,
+  },
+
+  // ── LEVEL 6 ─────────────────────────────────────────────
+  6: {
+    keys:          ['C', 'G', 'F', 'D', 'Bb', 'A', 'Eb', 'E', 'Ab'],
+    whiteKeysOnly: false,
+    intervals: {
+      // All main intervals including m2 and m7 — "all intervals, all directions"
+      ascPool: ['P1', 'm2', 'M2', 'm3', 'M3', 'P4', 'TT', 'P5', 'm6', 'M6', 'm7', 'M7', 'P8'],
+      desPool: ['P1', 'm2', 'M2', 'm3', 'M3', 'P4', 'TT', 'P5', 'm6', 'M6', 'm7', 'M7', 'P8'],
+      harPool: ['P1', 'm2', 'M2', 'm3', 'M3', 'P4', 'TT', 'P5', 'm6', 'M6', 'm7', 'M7', 'P8'],
+    },
+    chords: {
+      pool:       ['major', 'minor', 'dim', 'aug', 'dom7', 'maj7', 'min7', 'halfdim'],
+      fixedRoots: null,
+    },
+    cadences: {
+      pool: ['perfect', 'imperfect', 'interrupted', 'plagal'],
+    },
+    modulation: null,
+  },
+
+  // ── LEVEL 7 ─────────────────────────────────────────────
+  7: {
+    keys:          ['C', 'G', 'F', 'D', 'Bb', 'A', 'Eb', 'E', 'Ab', 'B', 'Db'],
+    whiteKeysOnly: false,
+    intervals: {
+      ascPool: ['P1', 'm2', 'M2', 'm3', 'M3', 'P4', 'TT', 'P5', 'm6', 'M6', 'm7', 'M7', 'P8', 'm9', 'M9'],
+      desPool: ['P1', 'm2', 'M2', 'm3', 'M3', 'P4', 'TT', 'P5', 'm6', 'M6', 'm7', 'M7', 'P8', 'm9', 'M9'],
+      harPool: ['P1', 'm2', 'M2', 'm3', 'M3', 'P4', 'TT', 'P5', 'm6', 'M6', 'm7', 'M7', 'P8', 'm9', 'M9'],
+    },
+    chords: {
+      pool:       ['major', 'minor', 'dim', 'aug', 'dom7', 'maj7', 'min7', 'halfdim'],
+      inversions: true,
+      fixedRoots: null,
+    },
+    cadences: {
+      pool: ['perfect', 'imperfect', 'interrupted', 'plagal'],
+    },
+    modulation: {
+      pool: ['dominant', 'subdominant', 'rel_minor'],
+    },
+  },
+
+  // ── LEVEL 8 ─────────────────────────────────────────────
+  8: {
+    keys:          ['C', 'G', 'F', 'D', 'Bb', 'A', 'Eb', 'E', 'Ab', 'B', 'Db', 'Fs'],
+    whiteKeysOnly: false,
+    intervals: {
+      ascPool: ['P1', 'm2', 'M2', 'm3', 'M3', 'P4', 'TT', 'P5', 'm6', 'M6', 'm7', 'M7', 'P8', 'm9', 'M9', 'm10', 'M10'],
+      desPool: ['P1', 'm2', 'M2', 'm3', 'M3', 'P4', 'TT', 'P5', 'm6', 'M6', 'm7', 'M7', 'P8', 'm9', 'M9', 'm10', 'M10'],
+      harPool: ['P1', 'm2', 'M2', 'm3', 'M3', 'P4', 'TT', 'P5', 'm6', 'M6', 'm7', 'M7', 'P8', 'm9', 'M9', 'm10', 'M10'],
+    },
+    chords: {
+      pool:       ['major', 'minor', 'dim', 'aug', 'dom7', 'maj7', 'min7', 'halfdim'],
+      inversions: true,
+      fixedRoots: null,
+    },
+    cadences: {
+      pool: ['perfect', 'imperfect', 'interrupted', 'plagal'],
+    },
+    modulation: {
+      pool: ['dominant', 'subdominant', 'rel_minor', 'rel_major', 'parallel'],
+    },
+  },
+};
+
+// Convenience: returns a flat, deduplicated array of all intervals a student
+// has been introduced to at `level` (across all modes).
+function getAllIntervalsAtLevel(level) {
+  const d = LEVEL_DEFS[level];
+  if (!d) return [];
+  return [...new Set([...d.intervals.ascPool, ...d.intervals.desPool, ...d.intervals.harPool])];
+}
+
+// Returns the union of all note classes available across `keys`.
+function getUnionNoteClasses(keys) {
+  const classes = new Set();
+  keys.forEach(k => { (KEY_SCALES[k] || []).forEach(c => classes.add(c)); });
+  return classes;
+}
 
 
 /* === js/storage.js === */
@@ -884,19 +1089,97 @@ function getAreasByLevel(level) {
 
 
 /* === js/questions.js === */
+// ============================================================
+// QUESTION ENGINE
+// All generators read from LEVEL_DEFS to enforce level constraints.
+// White-key validation is applied strictly at levels 1–2.
+// ============================================================
+
+// ── ROOT NOTE SELECTION ───────────────────────────────────────
+
+/**
+ * Returns a random root MIDI in 48–65 such that:
+ *  - At whiteKeysOnly levels: both root AND (root + semitones) are white keys.
+ *  - At other levels: root is from the union of scale notes in the level's keys.
+ * The range 48–65 keeps the second note comfortably below 84 (C6) even for
+ * compound intervals up to a major 10th (+16 semitones).
+ */
+function getIntervalRootMidi(level, semitones) {
+  const def = LEVEL_DEFS[level];
+
+  let validClasses;
+
+  if (def.whiteKeysOnly) {
+    // Both root class and (root + semitones) class must be white keys
+    validClasses = WHITE_KEY_CLASSES.filter(rc =>
+      WHITE_KEY_CLASSES.includes((rc + semitones) % 12)
+    );
+  } else {
+    // Root can be any note from the union of allowed key scales
+    validClasses = [...getUnionNoteClasses(def.keys)];
+  }
+
+  const candidates = [];
+  for (let midi = 48; midi <= 65; midi++) {
+    if (validClasses.includes(midi % 12) && (midi + semitones) <= 84) {
+      candidates.push(midi);
+    }
+  }
+
+  if (!candidates.length) return 60; // safe fallback (C4)
+  return candidates[Math.floor(Math.random() * candidates.length)];
+}
+
+/**
+ * Returns a random root MIDI for a chord question:
+ *  - Level 2: uses fixedRoots specific to chordType (diatonic C major triads).
+ *  - Levels 3+: picks a tonic from the level's allowed keys.
+ */
+function getChordRootMidi(level, chordType) {
+  const def  = LEVEL_DEFS[level];
+  const cDef = def.chords;
+  if (!cDef) return 60;
+
+  let noteClass;
+
+  if (cDef.fixedRoots) {
+    const roots = cDef.fixedRoots[chordType]
+      || Object.values(cDef.fixedRoots).flat();
+    const name  = roots[Math.floor(Math.random() * roots.length)];
+    noteClass   = NOTE_NAME_TO_CLASS[name] ?? 0;
+  } else {
+    const keys  = def.keys;
+    const key   = keys[Math.floor(Math.random() * keys.length)];
+    noteClass   = KEY_TONICS[key] ?? 0;
+  }
+
+  // Find the first MIDI in the playable range that matches the note class
+  for (let midi = 48; midi <= 65; midi++) {
+    if (midi % 12 === noteClass) return midi;
+  }
+  return 60;
+}
+
+// ── DISTRACTOR SELECTION ──────────────────────────────────────
+
+/**
+ * Picks `count` plausible wrong answers from `pool`.
+ * For intervals: prefers neighbours by semitone distance (most confusable).
+ */
 function getDistractors(correct, pool, count = 3) {
-  const correctData = INTERVAL_DATA[correct] || CHORD_DATA[correct];
   let sorted = pool.filter(x => x !== correct);
 
   if (INTERVAL_DATA[correct]) {
     const cSt = INTERVAL_DATA[correct].semitones;
     sorted = sorted
       .filter(x => INTERVAL_DATA[x])
-      .sort((a, b) => Math.abs(INTERVAL_DATA[a].semitones - cSt) - Math.abs(INTERVAL_DATA[b].semitones - cSt));
+      .sort((a, b) =>
+        Math.abs(INTERVAL_DATA[a].semitones - cSt) -
+        Math.abs(INTERVAL_DATA[b].semitones - cSt)
+      );
   }
 
   const result = sorted.slice(0, count);
-  // Shuffle result into random order
   for (let i = result.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [result[i], result[j]] = [result[j], result[i]];
@@ -913,106 +1196,154 @@ function shuffle(arr) {
   return a;
 }
 
+// ── INTERVAL QUESTION ─────────────────────────────────────────
+
 function generateIntervalQuestion(level, mode, lastQ) {
-  const pool = INTERVAL_POOL[level] || INTERVAL_POOL[1];
-  let sym = pool[Math.floor(Math.random() * pool.length)];
-  // Avoid repeat
+  const def    = LEVEL_DEFS[level];
+  const intDef = def.intervals;
+
+  // Select the correct pool for this mode
+  let pool;
+  if (mode === 'descending') {
+    pool = intDef.desPool.length ? intDef.desPool : intDef.ascPool;
+  } else if (mode === 'harmonic') {
+    pool = intDef.harPool.length ? intDef.harPool : intDef.ascPool;
+  } else {
+    pool = intDef.ascPool;
+  }
+
+  // Avoid exact repeat of previous question
+  let sym   = pool[Math.floor(Math.random() * pool.length)];
   let tries = 0;
   while (lastQ && lastQ.correctAnswer === sym && tries < 10) {
     sym = pool[Math.floor(Math.random() * pool.length)];
     tries++;
   }
-  const data = INTERVAL_DATA[sym];
+
+  const data     = INTERVAL_DATA[sym];
   const semitones = data.semitones;
+  const rootMidi  = getIntervalRootMidi(level, semitones);
 
-  // Choose root note based on mode and interval size
-  let rootMidi;
-  if (mode === 'descending') {
-    rootMidi = randomRootMidi(Math.max(36, 48 + semitones), Math.min(72, 64 + semitones));
-    // For descending, root is the higher note
-  } else {
-    rootMidi = randomRootMidi(48, Math.min(64, 72 - semitones));
-  }
-
-  const distractors = getDistractors(sym, pool, 3);
-  const options = shuffle([sym, ...distractors]);
+  // Distractors come from the full set of intervals the student knows at this level
+  const fullPool  = getAllIntervalsAtLevel(level);
+  const distractors = getDistractors(sym, fullPool, 3);
+  const options   = shuffle([sym, ...distractors]);
 
   return {
-    type: 'interval', subtype: sym + '_' + mode,
-    intervalSymbol: sym, semitones, mode, rootMidi,
-    correctAnswer: sym, options,
+    type: 'interval',
+    subtype: `${sym}_${mode}`,
+    intervalSymbol: sym,
+    semitones,
+    mode,
+    rootMidi,
+    correctAnswer: sym,
+    options,
   };
 }
+
+// ── CHORD QUESTION ────────────────────────────────────────────
 
 function generateChordQuestion(level, lastQ) {
-  const pool = CHORD_POOL[level] || CHORD_POOL[1];
-  let type = pool[Math.floor(Math.random() * pool.length)];
-  let tries = 0;
+  const def  = LEVEL_DEFS[level];
+  const cDef = def.chords;
+  if (!cDef) return null;
+
+  const pool = cDef.pool;
+  let type   = pool[Math.floor(Math.random() * pool.length)];
+  let tries  = 0;
   while (lastQ && lastQ.correctAnswer === type && tries < 10) {
     type = pool[Math.floor(Math.random() * pool.length)];
     tries++;
   }
-  const data = CHORD_DATA[type];
-  const rootMidi = randomRootMidi(48, 60);
-  const distractors = pool.filter(x => x !== type).slice(0, 3);
-  const options = shuffle([type, ...distractors.slice(0, 3)]);
+
+  const rootMidi = getChordRootMidi(level, type);
+  const data     = CHORD_DATA[type];
+
+  // Ensure we always have exactly 4 options even with a small pool
+  const others   = pool.filter(x => x !== type);
+  const distractors = others.slice(0, 3);
+  const options  = shuffle([type, ...distractors]);
 
   return {
-    type: 'chord', subtype: type,
-    chordType: type, rootMidi, formula: data.formula,
-    correctAnswer: type, options,
+    type:          'chord',
+    subtype:       type,
+    chordType:     type,
+    rootMidi,
+    formula:       data.formula,
+    correctAnswer: type,
+    options,
   };
 }
+
+// ── CADENCE QUESTION ──────────────────────────────────────────
 
 function generateCadenceQuestion(level, lastQ) {
-  const pool = level >= 6
-    ? (level >= 8 ? ['perfect','imperfect','interrupted','plagal'] : ['perfect','imperfect','interrupted'])
-    : ['perfect','imperfect'];
-  let type = pool[Math.floor(Math.random() * pool.length)];
-  let tries = 0;
+  const def  = LEVEL_DEFS[level];
+  const cDef = def.cadences;
+  if (!cDef) return null;
+
+  const pool = cDef.pool;
+  let type   = pool[Math.floor(Math.random() * pool.length)];
+  let tries  = 0;
   while (lastQ && lastQ.correctAnswer === type && tries < 10) {
     type = pool[Math.floor(Math.random() * pool.length)];
     tries++;
   }
-  const options = shuffle(pool.length >= 4 ? pool : [...pool, ...['perfect','imperfect'].filter(x => !pool.includes(x))].slice(0,4));
 
-  return {
-    type: 'cadence', subtype: type,
-    cadenceType: type,
-    correctAnswer: type, options: options.slice(0,4),
-  };
-}
-
-function generateModulationQuestion(level, lastQ) {
-  const pool = level >= 8
-    ? ['dominant','subdominant','rel_minor','rel_major','parallel']
-    : ['dominant','subdominant','rel_minor'];
-  let type = pool[Math.floor(Math.random() * pool.length)];
-  const options = shuffle(pool).slice(0, Math.min(4, pool.length));
+  const options = shuffle([...pool]).slice(0, 4);
   if (!options.includes(type)) options[0] = type;
 
   return {
-    type: 'modulation', subtype: type,
-    modType: type,
-    correctAnswer: type, options: shuffle(options),
+    type:          'cadence',
+    subtype:       type,
+    cadenceType:   type,
+    correctAnswer: type,
+    options:       shuffle(options),
   };
 }
 
+// ── MODULATION QUESTION ───────────────────────────────────────
+
+function generateModulationQuestion(level, lastQ) {
+  const def  = LEVEL_DEFS[level];
+  const mDef = def.modulation;
+  if (!mDef) return null;
+
+  const pool = mDef.pool;
+  let type   = pool[Math.floor(Math.random() * pool.length)];
+
+  const options = shuffle([...pool]).slice(0, 4);
+  if (!options.includes(type)) options[0] = type;
+
+  return {
+    type:          'modulation',
+    subtype:       type,
+    modType:       type,
+    correctAnswer: type,
+    options:       shuffle(options),
+  };
+}
+
+// ── DISPATCHER ───────────────────────────────────────────────
+
 function generateQuestion(area, level) {
   const last = APP.lastQuestion;
-  switch(area) {
-    case 'intervals': return generateIntervalQuestion(level, APP.trainMode, last);
-    case 'chords': return generateChordQuestion(level, last);
-    case 'cadences': return generateCadenceQuestion(level, last);
+  switch (area) {
+    case 'intervals':  return generateIntervalQuestion(level, APP.trainMode, last);
+    case 'chords':     return generateChordQuestion(level, last);
+    case 'cadences':   return generateCadenceQuestion(level, last);
     case 'modulation': return generateModulationQuestion(level, last);
   }
 }
 
 function recordAnswer(area, subtype, level, given, correct, timeMs) {
   APP.data.answers.push({
-    timestamp: Date.now(), area, subtype, level,
-    answerGiven: given, correctAnswer: correct,
-    isCorrect: given === correct, responseTimeMs: timeMs,
+    timestamp:     Date.now(),
+    area, subtype, level,
+    answerGiven:   given,
+    correctAnswer: correct,
+    isCorrect:     given === correct,
+    responseTimeMs: timeMs,
   });
   saveData();
 }
@@ -1249,14 +1580,20 @@ function renderTraining(el) {
 
   let modeTabs = '';
   if (area === 'intervals') {
-    const modes = [
-      { key: 'ascending', label: 'Melodic ↑' },
-      { key: 'descending', label: 'Melodic ↓' },
-      ...(level >= 3 ? [{ key: 'harmonic', label: 'Harmonic' }] : []),
-    ];
-    modeTabs = `<div class="train-mode-tabs">
-      ${modes.map(m => `<div class="train-mode-tab${APP.trainMode === m.key ? ' active' : ''}" onclick="setTrainMode('${m.key}')">${m.label}</div>`).join('')}
-    </div>`;
+    const intDef = LEVEL_DEFS[level].intervals;
+    const modes  = [];
+    if (intDef.ascPool.length) modes.push({ key: 'ascending',  label: 'Melodic ↑' });
+    if (intDef.desPool.length) modes.push({ key: 'descending', label: 'Melodic ↓' });
+    if (intDef.harPool.length) modes.push({ key: 'harmonic',   label: 'Harmonic'   });
+
+    // Reset to ascending if current mode is no longer available at this level
+    if (!modes.find(m => m.key === APP.trainMode)) APP.trainMode = 'ascending';
+
+    if (modes.length > 1) {
+      modeTabs = `<div class="train-mode-tabs">
+        ${modes.map(m => `<div class="train-mode-tab${APP.trainMode === m.key ? ' active' : ''}" onclick="setTrainMode('${m.key}')">${m.label}</div>`).join('')}
+      </div>`;
+    }
   }
 
   el.innerHTML = `
@@ -1449,7 +1786,7 @@ function renderTheory(el) {
 }
 
 function theoryIntervalSection(level) {
-  const pool = INTERVAL_POOL[level] || INTERVAL_POOL[1];
+  const pool = getAllIntervalsAtLevel(level);
   const items = pool.map(sym => {
     const d = INTERVAL_DATA[sym];
     return `<div class="theory-item">
@@ -1472,7 +1809,8 @@ function theoryIntervalSection(level) {
 }
 
 function theoryChordSection(level) {
-  const pool = CHORD_POOL[level] || CHORD_POOL[1];
+  const chordDef = LEVEL_DEFS[level].chords;
+  const pool = chordDef ? chordDef.pool : [];
   const items = pool.map(key => {
     const d = CHORD_DATA[key];
     const formulaStr = d.formula.join(' – ');
@@ -1496,13 +1834,9 @@ function theoryChordSection(level) {
 }
 
 function theoryCadenceSection(level) {
-  const cadences = level >= 8
-    ? Object.entries(CADENCE_DATA)
-    : level >= 6
-      ? [['perfect',CADENCE_DATA.perfect],['imperfect',CADENCE_DATA.imperfect],['interrupted',CADENCE_DATA.interrupted]]
-      : level >= 4
-        ? [['perfect',CADENCE_DATA.perfect],['imperfect',CADENCE_DATA.imperfect]]
-        : [['perfect',CADENCE_DATA.perfect]];
+  const cadDef  = LEVEL_DEFS[level].cadences;
+  const cadPool = cadDef ? cadDef.pool : ['perfect'];
+  const cadences = cadPool.map(k => [k, CADENCE_DATA[k]]).filter(([, d]) => d);
 
   const items = cadences.map(([key, d]) =>
     `<div class="theory-item">
@@ -1619,7 +1953,7 @@ function renderProgress(el) {
   // Item breakdown
   let itemRows = '';
   if (APP.progressArea === 'intervals') {
-    const pool = INTERVAL_POOL[APP.data.user.currentLevel] || INTERVAL_POOL[1];
+    const pool = getAllIntervalsAtLevel(APP.data.user.currentLevel);
     pool.forEach(sym => {
       // Aggregate ascending + descending + harmonic
       const subtypes = [sym + '_ascending', sym + '_descending', sym + '_harmonic'];
@@ -1633,7 +1967,8 @@ function renderProgress(el) {
       itemRows += `<div class="item-row"><div class="item-name">${INTERVAL_DATA[sym]?.name || sym}</div><div class="item-right"><div class="item-score" style="color:${sc}">${pct !== null ? pct + '%' : '—'}</div><div class="status-dot">${s}</div></div></div>`;
     });
   } else if (APP.progressArea === 'chords') {
-    const pool = CHORD_POOL[APP.data.user.currentLevel] || CHORD_POOL[1];
+    const chordDef = LEVEL_DEFS[APP.data.user.currentLevel].chords;
+    const pool = chordDef ? chordDef.pool : [];
     pool.forEach(key => {
       const arr = (APP.data.answers || []).filter(a => a.area === 'chords' && a.subtype === key).slice(-20);
       const total = arr.length, correct = arr.filter(a => a.isCorrect).length;

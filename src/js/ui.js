@@ -61,14 +61,20 @@ function renderTraining(el) {
 
   let modeTabs = '';
   if (area === 'intervals') {
-    const modes = [
-      { key: 'ascending', label: 'Melodic ↑' },
-      { key: 'descending', label: 'Melodic ↓' },
-      ...(level >= 3 ? [{ key: 'harmonic', label: 'Harmonic' }] : []),
-    ];
-    modeTabs = `<div class="train-mode-tabs">
-      ${modes.map(m => `<div class="train-mode-tab${APP.trainMode === m.key ? ' active' : ''}" onclick="setTrainMode('${m.key}')">${m.label}</div>`).join('')}
-    </div>`;
+    const intDef = LEVEL_DEFS[level].intervals;
+    const modes  = [];
+    if (intDef.ascPool.length) modes.push({ key: 'ascending',  label: 'Melodic ↑' });
+    if (intDef.desPool.length) modes.push({ key: 'descending', label: 'Melodic ↓' });
+    if (intDef.harPool.length) modes.push({ key: 'harmonic',   label: 'Harmonic'   });
+
+    // Reset to ascending if current mode is no longer available at this level
+    if (!modes.find(m => m.key === APP.trainMode)) APP.trainMode = 'ascending';
+
+    if (modes.length > 1) {
+      modeTabs = `<div class="train-mode-tabs">
+        ${modes.map(m => `<div class="train-mode-tab${APP.trainMode === m.key ? ' active' : ''}" onclick="setTrainMode('${m.key}')">${m.label}</div>`).join('')}
+      </div>`;
+    }
   }
 
   el.innerHTML = `
@@ -261,7 +267,7 @@ function renderTheory(el) {
 }
 
 function theoryIntervalSection(level) {
-  const pool = INTERVAL_POOL[level] || INTERVAL_POOL[1];
+  const pool = getAllIntervalsAtLevel(level);
   const items = pool.map(sym => {
     const d = INTERVAL_DATA[sym];
     return `<div class="theory-item">
@@ -284,7 +290,8 @@ function theoryIntervalSection(level) {
 }
 
 function theoryChordSection(level) {
-  const pool = CHORD_POOL[level] || CHORD_POOL[1];
+  const chordDef = LEVEL_DEFS[level].chords;
+  const pool = chordDef ? chordDef.pool : [];
   const items = pool.map(key => {
     const d = CHORD_DATA[key];
     const formulaStr = d.formula.join(' – ');
@@ -308,13 +315,9 @@ function theoryChordSection(level) {
 }
 
 function theoryCadenceSection(level) {
-  const cadences = level >= 8
-    ? Object.entries(CADENCE_DATA)
-    : level >= 6
-      ? [['perfect',CADENCE_DATA.perfect],['imperfect',CADENCE_DATA.imperfect],['interrupted',CADENCE_DATA.interrupted]]
-      : level >= 4
-        ? [['perfect',CADENCE_DATA.perfect],['imperfect',CADENCE_DATA.imperfect]]
-        : [['perfect',CADENCE_DATA.perfect]];
+  const cadDef  = LEVEL_DEFS[level].cadences;
+  const cadPool = cadDef ? cadDef.pool : ['perfect'];
+  const cadences = cadPool.map(k => [k, CADENCE_DATA[k]]).filter(([, d]) => d);
 
   const items = cadences.map(([key, d]) =>
     `<div class="theory-item">
@@ -431,7 +434,7 @@ function renderProgress(el) {
   // Item breakdown
   let itemRows = '';
   if (APP.progressArea === 'intervals') {
-    const pool = INTERVAL_POOL[APP.data.user.currentLevel] || INTERVAL_POOL[1];
+    const pool = getAllIntervalsAtLevel(APP.data.user.currentLevel);
     pool.forEach(sym => {
       // Aggregate ascending + descending + harmonic
       const subtypes = [sym + '_ascending', sym + '_descending', sym + '_harmonic'];
@@ -445,7 +448,8 @@ function renderProgress(el) {
       itemRows += `<div class="item-row"><div class="item-name">${INTERVAL_DATA[sym]?.name || sym}</div><div class="item-right"><div class="item-score" style="color:${sc}">${pct !== null ? pct + '%' : '—'}</div><div class="status-dot">${s}</div></div></div>`;
     });
   } else if (APP.progressArea === 'chords') {
-    const pool = CHORD_POOL[APP.data.user.currentLevel] || CHORD_POOL[1];
+    const chordDef = LEVEL_DEFS[APP.data.user.currentLevel].chords;
+    const pool = chordDef ? chordDef.pool : [];
     pool.forEach(key => {
       const arr = (APP.data.answers || []).filter(a => a.area === 'chords' && a.subtype === key).slice(-20);
       const total = arr.length, correct = arr.filter(a => a.isCorrect).length;

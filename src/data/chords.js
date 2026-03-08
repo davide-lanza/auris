@@ -9,13 +9,4 @@ const CHORD_DATA = {
   'halfdim':  { name: 'Half-Diminished',    formula: [0,3,6,10],   symbol: 'ø7',   char: 'Dark, ambiguous, searching',           usage: 'ii° in minor ii–V–i' },
 };
 
-const CHORD_POOL = {
-  1: ['major','minor'],
-  2: ['major','minor'],
-  3: ['major','minor','dim','aug'],
-  4: ['major','minor','dim','aug'],
-  5: ['major','minor','dim','aug','dom7','maj7','min7','halfdim'],
-  6: ['major','minor','dim','aug','dom7','maj7','min7','halfdim'],
-  7: ['major','minor','dim','aug','dom7','maj7','min7','halfdim'],
-  8: ['major','minor','dim','aug','dom7','maj7','min7','halfdim'],
-};
+// Chord pools per level are now defined in LEVEL_DEFS (src/data/levels.js)
