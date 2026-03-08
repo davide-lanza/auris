@@ -1,126 +1,70 @@
 // ============================================================
 // AUDIO ENGINE
-// Primary CDN: tonejs.github.io (official, CORS *, confirmed working)
-// Fallback CDN: gleitz.github.io
-// Timeout: 15 seconds per attempt
+// Uses EMBEDDED_SAMPLES — Base64 data URIs compiled into the
+// file by build.js. No CDN, no internet, always works.
 // ============================================================
 
-const SAMPLE_CDNS = [
-  "https://tonejs.github.io/audio/salamander/",
-  "https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/acoustic_grand_piano-mp3/",
-];
-
-const SAMPLE_URLS = {
-  "A0": "A0.mp3", "C1": "C1.mp3", "D#1": "Ds1.mp3", "F#1": "Fs1.mp3",
-  "A1": "A1.mp3", "C2": "C2.mp3", "D#2": "Ds2.mp3", "F#2": "Fs2.mp3",
-  "A2": "A2.mp3", "C3": "C3.mp3", "D#3": "Ds3.mp3", "F#3": "Fs3.mp3",
-  "A3": "A3.mp3", "C4": "C4.mp3", "D#4": "Ds4.mp3", "F#4": "Fs4.mp3",
-  "A4": "A4.mp3", "C5": "C5.mp3", "D#5": "Ds5.mp3", "F#5": "Fs5.mp3",
-  "A5": "A5.mp3", "C6": "C6.mp3", "D#6": "Ds6.mp3", "F#6": "Fs6.mp3",
-  "A6": "A6.mp3", "C7": "C7.mp3", "D#7": "Ds7.mp3", "F#7": "Fs7.mp3",
-  "A7": "A7.mp3", "C8": "C8.mp3"
-};
-
 async function startAudioLoad() {
-  const btn = document.getElementById('load-start-btn');
-  const barWrap = document.getElementById('load-bar-wrap');
-  const errEl = document.getElementById('load-error');
+  const btn      = document.getElementById('load-start-btn');
+  const statusEl = document.getElementById('load-status');
+  const errEl    = document.getElementById('load-error');
+  const barWrap  = document.getElementById('load-bar-wrap');
 
-  btn.style.display = 'none';
-  barWrap.style.display = 'block';
-  errEl.style.display = 'none';
-  updateLoadingUI(5, 'Unlocking audio…');
+  btn.style.display    = 'none';
+  errEl.style.display  = 'none';
+  if (barWrap) barWrap.style.display = 'none';
+  if (statusEl) statusEl.textContent = 'Preparing piano…';
 
   try {
     await Tone.start();
-    updateLoadingUI(10, 'Connecting to piano samples…');
-    await loadSamplerWithFallback();
+    await loadEmbeddedSampler();
   } catch (e) {
-    console.error('Audio load failed:', e);
-    btn.style.display = 'block';
-    barWrap.style.display = 'none';
-    errEl.style.display = 'block';
+    console.error('Audio init failed:', e);
+    btn.textContent      = 'Retry';
+    btn.style.display    = 'block';
+    errEl.style.display  = 'block';
+    if (statusEl) statusEl.textContent = '';
   }
 }
 
+// Kept for compatibility — used by legacy loading-screen paths
 function updateLoadingUI(pct, status) {
-  const bar = document.getElementById('load-bar');
+  const bar      = document.getElementById('load-bar');
   const statusEl = document.getElementById('load-status');
-  if (bar) bar.style.width = pct + '%';
+  if (bar)      bar.style.width    = pct + '%';
   if (statusEl) statusEl.textContent = status || '';
 }
 
-async function loadSamplerWithFallback() {
-  // Animated progress bar while waiting (real progress unknowable from outside Tone.js)
-  let fakeP = 10;
-  const fakeTimer = setInterval(() => {
-    fakeP = Math.min(fakeP + (Math.random() * 2 + 0.5), 90);
-    updateLoadingUI(fakeP, 'Loading piano samples…');
-  }, 400);
-
-  let lastError = null;
-
-  for (let i = 0; i < SAMPLE_CDNS.length; i++) {
-    const baseUrl = SAMPLE_CDNS[i];
-
-    if (i > 0) {
-      // Dispose the failed sampler before trying the next CDN
-      if (APP.sampler) {
-        try { APP.sampler.dispose(); } catch (_) {}
-        APP.sampler = null;
-      }
-      updateLoadingUI(fakeP, `Trying backup source…`);
-      await new Promise(r => setTimeout(r, 500)); // brief pause before retry
-    }
-
-    try {
-      await tryOneCDN(baseUrl);
-      // ── SUCCESS ──
-      clearInterval(fakeTimer);
-      updateLoadingUI(100, 'Piano ready ✓');
-      APP.audioReady = true;
-      setTimeout(onAudioReady, 500);
-      return;
-    } catch (e) {
-      lastError = e;
-      console.warn(`CDN ${i + 1} failed (${baseUrl}):`, e.message || e);
-      // continue to next CDN
-    }
-  }
-
-  // All CDNs exhausted
-  clearInterval(fakeTimer);
-  throw lastError || new Error('All piano sample sources failed. Please check your internet connection and try again.');
-}
-
-function tryOneCDN(baseUrl) {
-  const TIMEOUT_MS = 15000;
-
+function loadEmbeddedSampler() {
   return new Promise((resolve, reject) => {
-    let settled = false;
+    const statusEl = document.getElementById('load-status');
 
-    // Hard timeout — fires if onload/onerror never called (Tone.js known issue on slow networks)
-    const timeoutId = setTimeout(() => {
-      if (!settled) {
-        settled = true;
-        reject(new Error(`Timeout after ${TIMEOUT_MS / 1000}s loading from ${baseUrl}`));
-      }
-    }, TIMEOUT_MS);
+    // Animated dots while Tone.js decodes the PCM buffers (~1-3 s)
+    let dots = 0;
+    const dotTimer = setInterval(() => {
+      dots = (dots + 1) % 4;
+      if (statusEl) statusEl.textContent = 'Preparing piano' + '.'.repeat(dots);
+    }, 350);
 
     const done = (err) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timeoutId);
-      if (err) reject(err);
-      else resolve();
+      clearInterval(dotTimer);
+      if (err) {
+        reject(err);
+      } else {
+        APP.audioReady = true;
+        if (statusEl) statusEl.textContent = '';
+        setTimeout(onAudioReady, 300);
+        resolve();
+      }
     };
 
+    // EMBEDDED_SAMPLES is defined by build.js and prepended to the bundle.
+    // Values are data URIs ("data:audio/mp3;base64,...") so no baseUrl needed.
     APP.sampler = new Tone.Sampler({
-      urls: SAMPLE_URLS,
+      urls:    EMBEDDED_SAMPLES,
       release: 1,
-      baseUrl,
-      onload: () => done(null),
-      onerror: (e) => done(e || new Error('Sampler onerror')),
+      onload:  ()  => done(null),
+      onerror: (e) => done(e || new Error('Sampler decode error')),
     }).toDestination();
   });
 }
@@ -134,7 +78,7 @@ function playNote(note, dur = 1.5) {
 
 function playNotesMelodic(midiArr, ascending = true) {
   if (!APP.sampler || !APP.audioReady) return;
-  const now = Tone.now();
+  const now   = Tone.now();
   const notes = ascending ? midiArr.map(midiToNote) : [...midiArr].reverse().map(midiToNote);
   notes.forEach((note, i) => {
     try { APP.sampler.triggerAttackRelease(note, 1.5, now + i * 0.65); } catch (_) {}
