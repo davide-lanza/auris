@@ -1,0 +1,30 @@
+const INTERVAL_DATA = {
+  'P1':  { name: 'Unison',            semitones: 0,  anchor: 'Same note — just one pitch',     emoji: '🔁', char: 'Pure, identical' },
+  'm2':  { name: 'Minor 2nd',         semitones: 1,  anchor: 'Jaws theme',                     emoji: '🦈', char: 'Tense, sinister' },
+  'M2':  { name: 'Major 2nd',         semitones: 2,  anchor: 'Happy Birthday (first two notes)', emoji: '🎂', char: 'Bright, stepwise' },
+  'm3':  { name: 'Minor 3rd',         semitones: 3,  anchor: 'Smoke on the Water (Riff)',       emoji: '🎸', char: 'Dark, melancholic' },
+  'M3':  { name: 'Major 3rd',         semitones: 4,  anchor: 'Oh When the Saints Go Marching In', emoji: '⛪', char: 'Happy, warm' },
+  'P4':  { name: 'Perfect 4th',       semitones: 5,  anchor: 'Here Comes the Bride',            emoji: '💒', char: 'Strong, open' },
+  'TT':  { name: 'Tritone',           semitones: 6,  anchor: 'The Simpsons Theme',              emoji: '📺', char: 'Restless, dissonant' },
+  'P5':  { name: 'Perfect 5th',       semitones: 7,  anchor: 'Star Wars – Main Theme',          emoji: '⚔️', char: 'Powerful, noble' },
+  'm6':  { name: 'Minor 6th',         semitones: 8,  anchor: 'The Entertainer (Scott Joplin)',  emoji: '🎩', char: 'Tender, wistful' },
+  'M6':  { name: 'Major 6th',         semitones: 9,  anchor: 'My Bonnie Lies Over the Ocean',   emoji: '🌊', char: 'Bright, nostalgic' },
+  'm7':  { name: 'Minor 7th',         semitones: 10, anchor: 'Somewhere (West Side Story)',      emoji: '🌃', char: 'Yearning, bluesy' },
+  'M7':  { name: 'Major 7th',         semitones: 11, anchor: 'Take On Me – A-ha (verse)',       emoji: '💫', char: 'Dreamlike, tense-bright' },
+  'P8':  { name: 'Octave',            semitones: 12, anchor: 'Somewhere Over the Rainbow',      emoji: '🌈', char: 'Pure, soaring' },
+  'm9':  { name: 'Minor 9th',         semitones: 13, anchor: 'Nothing Else Matters (Metallica)', emoji: '🤘', char: 'Dark, expansive' },
+  'M9':  { name: 'Major 9th',         semitones: 14, anchor: 'Misty (jazz standard)',            emoji: '🎷', char: 'Lush, open' },
+  'm10': { name: 'Minor 10th',        semitones: 15, anchor: 'Minor 3rd an octave higher',      emoji: '🎶', char: 'Wide, dark warmth' },
+  'M10': { name: 'Major 10th',        semitones: 16, anchor: 'Major 3rd an octave higher',      emoji: '🎵', char: 'Wide, bright warmth' },
+};
+
+const INTERVAL_POOL = {
+  1: ['P1','M2','m3','M3','P4','P5'],
+  2: ['P1','M2','m3','M3','P4','P5'],
+  3: ['P1','m2','M2','m3','M3','P4','P5','m6','M6','P8'],
+  4: ['P1','m2','M2','m3','M3','P4','P5','m6','M6','P8'],
+  5: ['P1','m2','M2','m3','M3','P4','TT','P5','m6','M6','m7','M7','P8'],
+  6: ['P1','m2','M2','m3','M3','P4','TT','P5','m6','M6','m7','M7','P8'],
+  7: ['P1','m2','M2','m3','M3','P4','TT','P5','m6','M6','m7','M7','P8','m9','M9','m10','M10'],
+  8: ['P1','m2','M2','m3','M3','P4','TT','P5','m6','M6','m7','M7','P8','m9','M9','m10','M10'],
+};

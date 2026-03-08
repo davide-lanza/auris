@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0A0912">
+  <title>Auris — Ear Training</title>
+  <style>{{CSS}}</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loading-screen">
+  <div class="load-logo">Auris</div>
+  <div class="load-sub">Ear Training by Davide · Dear Piano</div>
+  <button class="load-btn" id="load-start-btn" onclick="startAudioLoad()">Load Piano</button>
+  <div class="load-bar-wrap" id="load-bar-wrap">
+    <div class="load-bar" id="load-bar"></div>
+  </div>
+  <div class="load-status" id="load-status"></div>
+  <div class="load-error" id="load-error">
+    Could not load piano samples.<br>
+    <button onclick="startAudioLoad()" style="margin-top:12px;padding:10px 20px;background:var(--gold);color:#0A0912;border:none;border-radius:8px;font-size:14px;cursor:pointer;">Retry</button>
+  </div>
+</div>
+
+<!-- ONBOARDING -->
+<div id="onboarding-screen">
+  <div class="ob-wrap fade-in">
+    <div class="ob-logo">Auris</div>
+    <div class="ob-subtitle">Ear Training by Davide · Dear Piano</div>
+    <div class="ob-name-label">What's your name?</div>
+    <input class="ob-name-input" id="ob-name-input" type="text" placeholder="Your name…" autocomplete="off" autocorrect="off">
+    <div class="ob-bullets">
+      <div class="ob-bullet"><div class="ob-bullet-dot"></div><div class="ob-bullet-text">Select your level and choose an area to train</div></div>
+      <div class="ob-bullet"><div class="ob-bullet-dot"></div><div class="ob-bullet-text">Each question is timed — faster correct answers score higher</div></div>
+      <div class="ob-bullet"><div class="ob-bullet-dot"></div><div class="ob-bullet-text">Reach 90% overall score to unlock the next level</div></div>
+      <div class="ob-bullet"><div class="ob-bullet-dot"></div><div class="ob-bullet-text">Your progress is saved automatically on this device</div></div>
+    </div>
+    <button class="ob-start-btn" onclick="completeOnboarding()">Start Training →</button>
+    <div class="ob-credit">Developed by Davide from Dear Piano<br>Powered by Claudio, the digital slave</div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <div id="app-header">
+    <button class="header-back" id="header-back" onclick="goBack()">←</button>
+    <div id="header-title">Auris</div>
+    <div id="header-badge" style="display:none"></div>
+  </div>
+  <div id="main-content"></div>
+  <nav id="bottom-nav">
+    <button class="nav-item active" data-nav="home" onclick="navigate('home')">
+      <span class="nav-icon">🏠</span><span class="nav-label">Home</span>
+    </button>
+    <button class="nav-item" data-nav="theory" onclick="navigate('theory')">
+      <span class="nav-icon">📚</span><span class="nav-label">Theory</span>
+    </button>
+    <button class="nav-item" data-nav="progress" onclick="navigate('progress')">
+      <span class="nav-icon">📊</span><span class="nav-label">Progress</span>
+    </button>
+    <button class="nav-item" data-nav="settings" onclick="navigate('settings')">
+      <span class="nav-icon">⚙️</span><span class="nav-label">Settings</span>
+    </button>
+  </nav>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-title" id="modal-title">Confirm</div>
+    <div class="modal-body" id="modal-body">Are you sure?</div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeModal()">Cancel</button>
+      <button class="modal-confirm" id="modal-confirm-btn">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="import-file" accept=".json" style="display:none" onchange="handleImport(event)">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+<script>{{JS}}</script>
+</body>
+</html>

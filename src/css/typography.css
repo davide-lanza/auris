@@ -1,0 +1,11 @@
+.text-gold { color: var(--gold-bright); }
+.text-dim { color: var(--dim); }
+.text-green { color: var(--green); }
+.text-red { color: var(--red); }
+.spacer-sm { height: 8px; }
+.spacer { height: 16px; }
+.section-pad { padding: 0 16px; }
+.divider { height: 1px; background: var(--border); margin: 4px 0; }
+.no-data { padding: 32px 16px; text-align: center; color: var(--dim); font-size: 14px; }
+.about-text { font-size: 13px; color: var(--dim); line-height: 1.7; }
+.about-highlight { color: var(--gold); }
