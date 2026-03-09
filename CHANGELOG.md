@@ -46,10 +46,10 @@ There are **8 levels**, from Beginner to Master. Each level gradually introduces
 | 8 | Master | Tenths + all keys + full modulation set |
 
 **To unlock the next level you need, for every active training area:**
-- At least **100 answers** (so the score is statistically meaningful)
+- At least **50 answers** (so the score is statistically meaningful)
 - An **average of 85% or above** across Accuracy, Fluency, and Retention
 
-When you meet the requirements, a 🔓 badge pulses on the home screen and an "Unlock Level" button appears.
+The home screen shows the two conditions as separate progress bars so you always know exactly what is holding you back. When both are met, a 🔓 badge pulses on the home screen and an "Unlock Level" button appears.
 
 ---
 
@@ -84,7 +84,7 @@ The Theory tab is a complete reference for the **entire curriculum across all 8 
 
 - **Radar chart** — a triangle showing your current Accuracy, Fluency, and Retention at a glance
 - **Metric bars** — each of the three metrics with a plain-language explanation of what it measures
-- **Unlock status** — live display of how far you are from unlocking the next level (e.g. "47/100 answers · avg 72% / 85% target")
+- **Unlock status** — live display of how far you are from unlocking the next level (e.g. "47/50 answers · avg 72% / 85% target")
 - **Recent Trend chart** — your last 50 answers plotted as individual correct/wrong dots, with a rolling 10-answer accuracy line drawn over them. The dashed gold line marks the 85% target. This shows whether you are genuinely improving or just having a good streak
 - **Item Breakdown** — per-interval or per-chord accuracy, so you can see exactly which ones you struggle with
 
@@ -94,7 +94,25 @@ The Theory tab is a complete reference for the **entire curriculum across all 8 
 
 ## Version History
 
-### v1.3 — 9 March 2026 (current)
+### v1.4 — 9 March 2026 (current)
+
+**Error comparison:**
+- New toggle in Settings › Training: **"Error comparison"** (default: on)
+- After every wrong answer the app automatically plays your chosen sound, pauses 2.2 seconds, then plays the correct one — you hear the contrast immediately without any extra taps
+- Tapping Next before the second sound fires cancels it cleanly
+- The preference is saved, so it persists across sessions
+
+**Cleaner home unlock progress:**
+- Removed the single aggregated percentage bar ("X% toward Level N"), which was hard to act on
+- Replaced with two explicit mini-bars, one per condition:
+  - *Answers* — fills as you practice, shows e.g. "20 / 50"
+  - *Avg score* — fills as your score rises, shows e.g. "72% / 85%"
+- Each bar turns green with a ✓ the moment its condition is met
+- When multiple areas are active, the label shows which area is the bottleneck
+
+---
+
+### v1.3 — 9 March 2026
 
 **Tuning and fixes:**
 - Fluency now rewards up to 4 seconds for full marks (was 2 s — too strict). Thresholds: ≤ 4 s = 100, ≤ 6 s = 80, ≤ 8 s = 60, ≤ 12 s = 30, above = 0
@@ -110,7 +128,7 @@ The Theory tab is a complete reference for the **entire curriculum across all 8 
 **Metrics & levelling:**
 - Removed "Consistency" as a fourth metric — it was tracking daily practice streaks which isn't the right signal for musical learning
 - Simplified to three metrics: Accuracy, Fluency, Retention
-- Level unlock now requires **≥ 100 answers AND avg ≥ 85%** per area — the minimum answer count prevents unlocking on a lucky short run
+- Level unlock now requires **≥ 50 answers AND avg ≥ 85%** per area — the minimum answer count prevents unlocking on a lucky short run
 
 **Theory tab — complete reference:**
 - Theory now shows all 17 intervals, 8 chords, 4 cadences and 5 modulation types, regardless of current level
