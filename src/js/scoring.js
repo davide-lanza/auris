@@ -105,8 +105,10 @@ function checkLevelUnlock() {
   if (lvl >= 8) return false;
   const areas = getAreasByLevel(lvl);
   if (!areas.length) return false;
-  // Check all areas: avg(accuracy, fluency, retention) >= 85
+  // Each area needs ≥ 100 answers AND avg(accuracy, fluency, retention) ≥ 85
   for (const area of areas) {
+    const answers = getAnswersForArea(area);
+    if (answers.length < 100) return false;
     const scores = computeAreaScores(area);
     const avg = Math.round((scores.accuracy + scores.fluency + scores.retention) / 3);
     if (avg < 85) return false;

@@ -43,7 +43,7 @@ function renderHome(el) {
     ${canUnlock && level < 8 ? `
     <div class="unlock-banner fade-in">
       <div class="unlock-title">🎉 Ready to advance!</div>
-      <div class="unlock-sub">All areas avg 85%+ (Accuracy · Fluency · Retention)</div>
+      <div class="unlock-sub">100+ answers · avg 85%+ on all three metrics</div>
       <button class="unlock-btn" onclick="unlockNextLevel()">Unlock Level ${level+1} →</button>
     </div>` : ''}
 
@@ -466,12 +466,17 @@ function renderProgress(el) {
   const status = scores.overall >= 90 ? '🟢' : scores.overall >= 60 ? '🟡' : '🔴';
   const statusColor = scores.overall >= 90 ? 'var(--green)' : scores.overall >= 60 ? 'var(--yellow)' : 'var(--red)';
 
-  // Metric bars
+  // Metric bars with explanations
   const metricColor = (v) => v >= 90 ? 'var(--green)' : v >= 60 ? 'var(--yellow)' : 'var(--red)';
+  const metricDesc = {
+    Accuracy:  'Correct answers over your last 30 questions, averaged by session (max 10/day). Core measure of how well you recognise this area.',
+    Fluency:   'How quickly you answer correctly. Under 2 s = full marks, scaling down to 0 at 10 s. Speed means the pattern is automatic, not just analysed.',
+    Retention: 'Weighted accuracy that gives extra credit when you answer correctly after a long break (≥ 20 h gap). High retention means the knowledge is truly sticking.',
+  };
   const metrics = [
-    { label: 'Accuracy', val: scores.accuracy, weight: '40%' },
-    { label: 'Fluency', val: scores.fluency, weight: '30%' },
-    { label: 'Retention', val: scores.retention, weight: '30%' },
+    { label: 'Accuracy',  val: scores.accuracy  },
+    { label: 'Fluency',   val: scores.fluency   },
+    { label: 'Retention', val: scores.retention },
   ];
   const metricBars = metrics.map(m => `
     <div class="metric-row">
@@ -479,6 +484,7 @@ function renderProgress(el) {
       <div class="metric-bar-wrap"><div class="metric-bar" style="width:${m.val}%;background:${metricColor(m.val)}"></div></div>
       <div class="metric-val" style="color:${metricColor(m.val)}">${m.val}</div>
     </div>
+    <div class="metric-desc">${metricDesc[m.label]}</div>
   `).join('');
 
   // Item breakdown
@@ -510,7 +516,9 @@ function renderProgress(el) {
     });
   }
 
-  const hasAnyData = getAnswersForArea(APP.progressArea).length > 0;
+  const totalAnswers = getAnswersForArea(APP.progressArea).length;
+  const unlockAvg = Math.round((scores.accuracy + scores.fluency + scores.retention) / 3);
+  const unlockProgress = `${totalAnswers}/100 answers · avg ${unlockAvg}% / 85% target`;
 
   el.innerHTML = `
     <div style="padding:16px 16px 4px">
@@ -529,11 +537,19 @@ function renderProgress(el) {
         </div>
       </div>
       ${metricBars}
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:11px;color:var(--dim)">
+        Level unlock: ${unlockProgress}
+      </div>
     </div>
 
     <div class="card">
-      <div style="font-size:13px;font-weight:600;color:var(--dim);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px">14-Day History</div>
-      ${hasAnyData ? buildLineChart(APP.progressArea) : '<div class="no-data">Practice to see your history</div>'}
+      <div style="font-size:13px;font-weight:600;color:var(--dim);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px">Recent Trend · last 50 answers</div>
+      <div style="font-size:11px;color:var(--dim);margin-bottom:8px">
+        <span style="color:rgba(91,191,138,0.7)">● correct</span> &nbsp;
+        <span style="color:rgba(224,96,96,0.6)">● wrong</span> &nbsp;
+        <span style="color:var(--gold)">— rolling 10-answer accuracy</span>
+      </div>
+      ${buildRollingAccuracyChart(APP.progressArea)}
     </div>
 
     ${itemRows ? `
