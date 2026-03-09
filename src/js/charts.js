@@ -92,73 +92,56 @@ function buildRadarChart(scores) {
   </svg>`;
 }
 
-function buildLineChart(area) {
-  const answers = getAnswersForArea(area);
-  const msDay = 86400000;
-  const now = Date.now();
+// Rolling accuracy chart — last 50 answers as dots + 10-answer rolling average line
+function buildRollingAccuracyChart(area) {
+  const answers = getAnswersForArea(area).slice(-50);
+  if (!answers.length) return '<div class="no-data">Practice to see your trend</div>';
 
-  // Build 14-day overall scores
-  const days = [];
-  for (let i = 13; i >= 0; i--) {
-    const dayStart = now - (i + 1) * msDay;
-    const dayEnd = now - i * msDay;
-    const dayAnswers = answers.filter(a => a.timestamp >= dayStart && a.timestamp < dayEnd);
-    if (dayAnswers.length) {
-      const correct = dayAnswers.filter(a => a.isCorrect).length;
-      days.push(Math.round(correct / dayAnswers.length * 100));
-    } else {
-      days.push(null);
-    }
-  }
-
+  const color = AREA_COLORS[area] || '#C9A84C';
   const W = 300, H = 120;
-  const ml = 32, mr = 8, mt = 8, mb = 24;
+  const ml = 28, mr = 8, mt = 8, mb = 16;
   const chartW = W - ml - mr;
   const chartH = H - mt - mb;
+  const n = answers.length;
 
-  // Grid lines
+  const xOf = i => ml + (n === 1 ? chartW / 2 : (i / (n - 1)) * chartW);
+  const yOf = v => mt + chartH - (v / 100) * chartH;
+
+  // Grid
   let grid = '';
-  [0, 25, 50, 75, 100].forEach(v => {
-    const y = mt + chartH - (v / 100) * chartH;
-    grid += `<line x1="${ml}" y1="${y}" x2="${W - mr}" y2="${y}" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>`;
-    grid += `<text x="${ml - 4}" y="${y + 4}" text-anchor="end" font-size="9" fill="rgba(237,233,224,0.3)" font-family="sans-serif">${v}</text>`;
+  [0, 50, 85, 100].forEach(v => {
+    const y = yOf(v);
+    const isTarget = v === 85;
+    grid += `<line x1="${ml}" y1="${y}" x2="${W - mr}" y2="${y}" stroke="${isTarget ? 'rgba(201,168,76,0.25)' : 'rgba(255,255,255,0.06)'}" stroke-width="${isTarget ? 1.5 : 1}" stroke-dasharray="${isTarget ? '4,3' : ''}"/>`;
+    grid += `<text x="${ml - 4}" y="${y + 4}" text-anchor="end" font-size="9" fill="${isTarget ? 'rgba(201,168,76,0.5)' : 'rgba(237,233,224,0.25)'}" font-family="sans-serif">${v}</text>`;
   });
 
-  // X axis labels (every 2 days)
-  let xLabels = '';
-  for (let i = 0; i < 14; i += 2) {
-    const x = ml + (i / 13) * chartW;
-    const d = new Date(now - (13 - i) * msDay);
-    const label = `${d.getDate()}/${d.getMonth()+1}`;
-    xLabels += `<text x="${x}" y="${H - 4}" text-anchor="middle" font-size="9" fill="rgba(237,233,224,0.3)" font-family="sans-serif">${label}</text>`;
+  // Answer dots
+  let dots = '';
+  answers.forEach((a, i) => {
+    const x = xOf(i);
+    const y = yOf(a.isCorrect ? 100 : 0);
+    dots += `<circle cx="${x}" cy="${y}" r="2.5" fill="${a.isCorrect ? 'rgba(91,191,138,0.5)' : 'rgba(224,96,96,0.4)'}"/>`;
+  });
+
+  // Rolling 10-answer accuracy line
+  const WINDOW = 10;
+  let rollingPts = '';
+  for (let i = WINDOW - 1; i < n; i++) {
+    const slice = answers.slice(i - WINDOW + 1, i + 1);
+    const acc = Math.round(slice.filter(a => a.isCorrect).length / WINDOW * 100);
+    const x = xOf(i);
+    const y = yOf(acc);
+    rollingPts += (i === WINDOW - 1) ? `M ${x} ${y}` : ` L ${x} ${y}`;
   }
 
-  // Line
-  const color = AREA_COLORS[area] || '#C9A84C';
-  let points = '';
-  let hasData = false;
-  days.forEach((v, i) => {
-    if (v !== null) {
-      const x = ml + (i / 13) * chartW;
-      const y = mt + chartH - (v / 100) * chartH;
-      if (!hasData) { points += `M ${x} ${y}`; hasData = true; }
-      else points += ` L ${x} ${y}`;
-    }
-  });
-
-  // Dots
-  let dots = '';
-  days.forEach((v, i) => {
-    if (v !== null) {
-      const x = ml + (i / 13) * chartW;
-      const y = mt + chartH - (v / 100) * chartH;
-      dots += `<circle cx="${x}" cy="${y}" r="3" fill="${color}"/>`;
-    }
-  });
+  // "85% target" label
+  const targetY = yOf(85);
 
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block">
-    ${grid}${xLabels}
-    ${hasData ? `<path d="${points}" fill="none" stroke="${color}" stroke-width="2"/>` : ''}
+    ${grid}
+    <text x="${W - mr}" y="${targetY - 3}" text-anchor="end" font-size="8" fill="rgba(201,168,76,0.6)" font-family="sans-serif">target</text>
     ${dots}
+    ${rollingPts ? `<path d="${rollingPts}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round"/>` : ''}
   </svg>`;
 }

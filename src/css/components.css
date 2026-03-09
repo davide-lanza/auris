@@ -97,6 +97,12 @@
 }
 .theory-mel-btn:active { background: rgba(201,168,76,0.15); }
 
+/* ===== METRIC DESCRIPTION ===== */
+.metric-desc {
+  font-size: 11px; color: var(--dim); line-height: 1.5;
+  margin: -2px 0 10px 0; padding-left: 2px;
+}
+
 /* ===== THEORY ITEM FUTURE ===== */
 .theory-item-future { opacity: 0.55; }
 .theory-anchor { font-size: 11px; color: var(--gold); margin-top: 3px; }

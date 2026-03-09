@@ -151,6 +151,12 @@ html, body {
 }
 .theory-mel-btn:active { background: rgba(201,168,76,0.15); }
 
+/* ===== METRIC DESCRIPTION ===== */
+.metric-desc {
+  font-size: 11px; color: var(--dim); line-height: 1.5;
+  margin: -2px 0 10px 0; padding-left: 2px;
+}
+
 /* ===== THEORY ITEM FUTURE ===== */
 .theory-item-future { opacity: 0.55; }
 .theory-anchor { font-size: 11px; color: var(--gold); margin-top: 3px; }
@@ -1066,6 +1072,25 @@ function loadEmbeddedSampler() {
   });
 }
 
+// ── THEORY AUDIO MANAGEMENT ───────────────────────────────────
+// All theory playback goes through timeout-based scheduling so any
+// in-progress audio can be cleanly interrupted when a new button is tapped.
+
+function stopTheoryAudio() {
+  (APP.theoryTimeouts || []).forEach(id => clearTimeout(id));
+  APP.theoryTimeouts = [];
+  if (APP.sampler) { try { APP.sampler.releaseAll(); } catch(_) {} }
+}
+
+function _theoryNote(midi, durSecs, delayMs) {
+  if (!APP.theoryTimeouts) APP.theoryTimeouts = [];
+  const id = setTimeout(() => {
+    if (!APP.sampler || !APP.audioReady) return;
+    try { APP.sampler.triggerAttackRelease(midiToNote(midi), durSecs, Tone.now()); } catch(_) {}
+  }, delayMs);
+  APP.theoryTimeouts.push(id);
+}
+
 // ── PLAYBACK HELPERS ──────────────────────────────────────────
 
 function playNote(note, dur = 1.5) {
@@ -1199,10 +1224,10 @@ function computeFluency(answers) {
   if (!correct.length) return 0;
   const scores = correct.map(a => {
     const t = a.responseTimeMs;
-    if (t <= 2000) return 100;
-    if (t <= 4000) return 80;
-    if (t <= 6000) return 60;
-    if (t <= 10000) return 30;
+    if (t <= 4000)  return 100;
+    if (t <= 6000)  return 80;
+    if (t <= 8000)  return 60;
+    if (t <= 12000) return 30;
     return 0;
   });
   return Math.round(scores.reduce((s,v) => s+v, 0) / scores.length);
@@ -1263,9 +1288,36 @@ function computeItemScores(area) {
 function computeLevelProgress() {
   const lvl = APP.data.user.currentLevel;
   const areas = getAreasByLevel(lvl);
-  const scores = areas.map(a => computeAreaScores(a).overall);
-  if (!scores.length) return 0;
-  return Math.round(scores.reduce((s,v) => s+v, 0) / scores.length);
+  if (!areas.length) return 0;
+  const progresses = areas.map(area => {
+    const answers = getAnswersForArea(area);
+    const s = computeAreaScores(area);
+    const avg = (s.accuracy + s.fluency + s.retention) / 3;
+    const answerP = Math.min(answers.length / 50, 1);
+    const scoreP  = Math.min(avg / 85, 1);
+    return (answerP + scoreP) / 2;
+  });
+  return Math.round(progresses.reduce((s,v) => s+v, 0) / progresses.length * 100);
+}
+
+function computeLevelProgressLabel() {
+  const lvl = APP.data.user.currentLevel;
+  const areas = getAreasByLevel(lvl);
+  if (!areas.length) return '';
+  // Find the bottleneck area (lowest combined progress)
+  let worstArea = areas[0], worstP = Infinity;
+  areas.forEach(area => {
+    const answers = getAnswersForArea(area);
+    const s = computeAreaScores(area);
+    const avg = (s.accuracy + s.fluency + s.retention) / 3;
+    const p = Math.min(answers.length / 50, 1) + Math.min(avg / 85, 1);
+    if (p < worstP) { worstP = p; worstArea = area; }
+  });
+  const answers = getAnswersForArea(worstArea);
+  const s = computeAreaScores(worstArea);
+  const avg = Math.round((s.accuracy + s.fluency + s.retention) / 3);
+  const prefix = areas.length > 1 ? `${AREA_CONFIG[worstArea].name}: ` : '';
+  return `${prefix}${Math.min(answers.length, 50)}/50 answers · avg ${avg}% / 85%`;
 }
 
 function checkLevelUnlock() {
@@ -1273,8 +1325,10 @@ function checkLevelUnlock() {
   if (lvl >= 8) return false;
   const areas = getAreasByLevel(lvl);
   if (!areas.length) return false;
-  // Check all areas: avg(accuracy, fluency, retention) >= 85
+  // Each area needs ≥ 50 answers AND avg(accuracy, fluency, retention) ≥ 85
   for (const area of areas) {
+    const answers = getAnswersForArea(area);
+    if (answers.length < 50) return false;
     const scores = computeAreaScores(area);
     const avg = Math.round((scores.accuracy + scores.fluency + scores.retention) / 3);
     if (avg < 85) return false;
@@ -1645,74 +1699,57 @@ function buildRadarChart(scores) {
   </svg>`;
 }
 
-function buildLineChart(area) {
-  const answers = getAnswersForArea(area);
-  const msDay = 86400000;
-  const now = Date.now();
+// Rolling accuracy chart — last 50 answers as dots + 10-answer rolling average line
+function buildRollingAccuracyChart(area) {
+  const answers = getAnswersForArea(area).slice(-50);
+  if (!answers.length) return '<div class="no-data">Practice to see your trend</div>';
 
-  // Build 14-day overall scores
-  const days = [];
-  for (let i = 13; i >= 0; i--) {
-    const dayStart = now - (i + 1) * msDay;
-    const dayEnd = now - i * msDay;
-    const dayAnswers = answers.filter(a => a.timestamp >= dayStart && a.timestamp < dayEnd);
-    if (dayAnswers.length) {
-      const correct = dayAnswers.filter(a => a.isCorrect).length;
-      days.push(Math.round(correct / dayAnswers.length * 100));
-    } else {
-      days.push(null);
-    }
-  }
-
+  const color = AREA_COLORS[area] || '#C9A84C';
   const W = 300, H = 120;
-  const ml = 32, mr = 8, mt = 8, mb = 24;
+  const ml = 28, mr = 8, mt = 8, mb = 16;
   const chartW = W - ml - mr;
   const chartH = H - mt - mb;
+  const n = answers.length;
 
-  // Grid lines
+  const xOf = i => ml + (n === 1 ? chartW / 2 : (i / (n - 1)) * chartW);
+  const yOf = v => mt + chartH - (v / 100) * chartH;
+
+  // Grid
   let grid = '';
-  [0, 25, 50, 75, 100].forEach(v => {
-    const y = mt + chartH - (v / 100) * chartH;
-    grid += `<line x1="${ml}" y1="${y}" x2="${W - mr}" y2="${y}" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>`;
-    grid += `<text x="${ml - 4}" y="${y + 4}" text-anchor="end" font-size="9" fill="rgba(237,233,224,0.3)" font-family="sans-serif">${v}</text>`;
+  [0, 50, 85, 100].forEach(v => {
+    const y = yOf(v);
+    const isTarget = v === 85;
+    grid += `<line x1="${ml}" y1="${y}" x2="${W - mr}" y2="${y}" stroke="${isTarget ? 'rgba(201,168,76,0.25)' : 'rgba(255,255,255,0.06)'}" stroke-width="${isTarget ? 1.5 : 1}" stroke-dasharray="${isTarget ? '4,3' : ''}"/>`;
+    grid += `<text x="${ml - 4}" y="${y + 4}" text-anchor="end" font-size="9" fill="${isTarget ? 'rgba(201,168,76,0.5)' : 'rgba(237,233,224,0.25)'}" font-family="sans-serif">${v}</text>`;
   });
 
-  // X axis labels (every 2 days)
-  let xLabels = '';
-  for (let i = 0; i < 14; i += 2) {
-    const x = ml + (i / 13) * chartW;
-    const d = new Date(now - (13 - i) * msDay);
-    const label = `${d.getDate()}/${d.getMonth()+1}`;
-    xLabels += `<text x="${x}" y="${H - 4}" text-anchor="middle" font-size="9" fill="rgba(237,233,224,0.3)" font-family="sans-serif">${label}</text>`;
+  // Answer dots
+  let dots = '';
+  answers.forEach((a, i) => {
+    const x = xOf(i);
+    const y = yOf(a.isCorrect ? 100 : 0);
+    dots += `<circle cx="${x}" cy="${y}" r="2.5" fill="${a.isCorrect ? 'rgba(91,191,138,0.5)' : 'rgba(224,96,96,0.4)'}"/>`;
+  });
+
+  // Rolling 10-answer accuracy line
+  const WINDOW = 10;
+  let rollingPts = '';
+  for (let i = WINDOW - 1; i < n; i++) {
+    const slice = answers.slice(i - WINDOW + 1, i + 1);
+    const acc = Math.round(slice.filter(a => a.isCorrect).length / WINDOW * 100);
+    const x = xOf(i);
+    const y = yOf(acc);
+    rollingPts += (i === WINDOW - 1) ? `M ${x} ${y}` : ` L ${x} ${y}`;
   }
 
-  // Line
-  const color = AREA_COLORS[area] || '#C9A84C';
-  let points = '';
-  let hasData = false;
-  days.forEach((v, i) => {
-    if (v !== null) {
-      const x = ml + (i / 13) * chartW;
-      const y = mt + chartH - (v / 100) * chartH;
-      if (!hasData) { points += `M ${x} ${y}`; hasData = true; }
-      else points += ` L ${x} ${y}`;
-    }
-  });
-
-  // Dots
-  let dots = '';
-  days.forEach((v, i) => {
-    if (v !== null) {
-      const x = ml + (i / 13) * chartW;
-      const y = mt + chartH - (v / 100) * chartH;
-      dots += `<circle cx="${x}" cy="${y}" r="3" fill="${color}"/>`;
-    }
-  });
+  // "85% target" label
+  const targetY = yOf(85);
 
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block">
-    ${grid}${xLabels}
-    ${hasData ? `<path d="${points}" fill="none" stroke="${color}" stroke-width="2"/>` : ''}
+    ${grid}
+    <text x="${W - mr}" y="${targetY - 3}" text-anchor="end" font-size="8" fill="rgba(201,168,76,0.6)" font-family="sans-serif">target</text>
     ${dots}
+    ${rollingPts ? `<path d="${rollingPts}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round"/>` : ''}
   </svg>`;
 }
 
@@ -1759,11 +1796,12 @@ function renderHome(el) {
       <div class="level-progress-bar" style="width:${lvlProgress}%"></div>
     </div>
     <div class="level-progress-text">${lvlProgress}% toward Level ${Math.min(level+1,8)} · ${LEVEL_NAMES[Math.min(level+1,8)]}</div>
+    <div style="font-size:11px;color:var(--dim);margin-top:2px;text-align:center">${computeLevelProgressLabel()}</div>
 
     ${canUnlock && level < 8 ? `
     <div class="unlock-banner fade-in">
       <div class="unlock-title">🎉 Ready to advance!</div>
-      <div class="unlock-sub">All areas avg 85%+ (Accuracy · Fluency · Retention)</div>
+      <div class="unlock-sub">50+ answers · avg 85%+ on all three metrics</div>
       <button class="unlock-btn" onclick="unlockNextLevel()">Unlock Level ${level+1} →</button>
     </div>` : ''}
 
@@ -2150,21 +2188,39 @@ function toggleTheorySection(header) {
 function theoryPlayInterval(sym) {
   const d = INTERVAL_DATA[sym];
   if (!d) return;
-  playInterval(60, d.semitones, 'ascending');
+  stopTheoryAudio();
+  _theoryNote(60, 1.5, 0);
+  _theoryNote(60 + d.semitones, 1.5, 650);
 }
 
 function theoryPlayMelody(sym, direction) {
-  playIntervalMelody(sym, direction);
+  const entry = INTERVAL_MELODIES[sym];
+  if (!entry) return;
+  const mel = entry[direction] || entry.asc;
+  if (!mel) return;
+  stopTheoryAudio();
+  let ms = 0;
+  mel.notes.forEach(({ st, dur }) => {
+    const secs = DUR_SECS[dur] || 0.75;
+    _theoryNote(60 + st, secs * 0.9, ms);
+    ms += secs * 1000;
+  });
 }
 
 function theoryPlayChord(key) {
   const d = CHORD_DATA[key];
   if (!d) return;
-  playChord(60, d.formula);
+  stopTheoryAudio();
+  d.formula.forEach((f, i) => _theoryNote(60 + f, 2, i * 120));
 }
 
 function theoryPlayCadence(key) {
-  playCadence(key);
+  const prog = CADENCE_CHORDS[key];
+  if (!prog) return;
+  stopTheoryAudio();
+  prog.forEach((chord, ci) => {
+    chord.forEach((midi, ni) => _theoryNote(midi, 1.8, ci * 2200 + ni * 80));
+  });
 }
 
 // ----- PROGRESS -----
@@ -2186,12 +2242,17 @@ function renderProgress(el) {
   const status = scores.overall >= 90 ? '🟢' : scores.overall >= 60 ? '🟡' : '🔴';
   const statusColor = scores.overall >= 90 ? 'var(--green)' : scores.overall >= 60 ? 'var(--yellow)' : 'var(--red)';
 
-  // Metric bars
+  // Metric bars with explanations
   const metricColor = (v) => v >= 90 ? 'var(--green)' : v >= 60 ? 'var(--yellow)' : 'var(--red)';
+  const metricDesc = {
+    Accuracy:  'Correct answers over your last 30 questions, averaged by session (max 10/day). Core measure of how well you recognise this area.',
+    Fluency:   'How quickly you answer correctly. Under 4 s = full marks, scaling down to 0 at 12 s. Speed means the pattern is automatic, not just analysed.',
+    Retention: 'Weighted accuracy that gives extra credit when you answer correctly after a long break (≥ 20 h gap). High retention means the knowledge is truly sticking.',
+  };
   const metrics = [
-    { label: 'Accuracy', val: scores.accuracy, weight: '40%' },
-    { label: 'Fluency', val: scores.fluency, weight: '30%' },
-    { label: 'Retention', val: scores.retention, weight: '30%' },
+    { label: 'Accuracy',  val: scores.accuracy  },
+    { label: 'Fluency',   val: scores.fluency   },
+    { label: 'Retention', val: scores.retention },
   ];
   const metricBars = metrics.map(m => `
     <div class="metric-row">
@@ -2199,6 +2260,7 @@ function renderProgress(el) {
       <div class="metric-bar-wrap"><div class="metric-bar" style="width:${m.val}%;background:${metricColor(m.val)}"></div></div>
       <div class="metric-val" style="color:${metricColor(m.val)}">${m.val}</div>
     </div>
+    <div class="metric-desc">${metricDesc[m.label]}</div>
   `).join('');
 
   // Item breakdown
@@ -2230,7 +2292,9 @@ function renderProgress(el) {
     });
   }
 
-  const hasAnyData = getAnswersForArea(APP.progressArea).length > 0;
+  const totalAnswers = getAnswersForArea(APP.progressArea).length;
+  const unlockAvg = Math.round((scores.accuracy + scores.fluency + scores.retention) / 3);
+  const unlockProgress = `${Math.min(totalAnswers, 50)}/50 answers · avg ${unlockAvg}% / 85% target`;
 
   el.innerHTML = `
     <div style="padding:16px 16px 4px">
@@ -2249,11 +2313,19 @@ function renderProgress(el) {
         </div>
       </div>
       ${metricBars}
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:11px;color:var(--dim)">
+        Level unlock: ${unlockProgress}
+      </div>
     </div>
 
     <div class="card">
-      <div style="font-size:13px;font-weight:600;color:var(--dim);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px">14-Day History</div>
-      ${hasAnyData ? buildLineChart(APP.progressArea) : '<div class="no-data">Practice to see your history</div>'}
+      <div style="font-size:13px;font-weight:600;color:var(--dim);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px">Recent Trend · last 50 answers</div>
+      <div style="font-size:11px;color:var(--dim);margin-bottom:8px">
+        <span style="color:rgba(91,191,138,0.7)">● correct</span> &nbsp;
+        <span style="color:rgba(224,96,96,0.6)">● wrong</span> &nbsp;
+        <span style="color:var(--gold)">— rolling 10-answer accuracy</span>
+      </div>
+      ${buildRollingAccuracyChart(APP.progressArea)}
     </div>
 
     ${itemRows ? `

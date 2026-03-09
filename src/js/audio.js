@@ -69,6 +69,25 @@ function loadEmbeddedSampler() {
   });
 }
 
+// ── THEORY AUDIO MANAGEMENT ───────────────────────────────────
+// All theory playback goes through timeout-based scheduling so any
+// in-progress audio can be cleanly interrupted when a new button is tapped.
+
+function stopTheoryAudio() {
+  (APP.theoryTimeouts || []).forEach(id => clearTimeout(id));
+  APP.theoryTimeouts = [];
+  if (APP.sampler) { try { APP.sampler.releaseAll(); } catch(_) {} }
+}
+
+function _theoryNote(midi, durSecs, delayMs) {
+  if (!APP.theoryTimeouts) APP.theoryTimeouts = [];
+  const id = setTimeout(() => {
+    if (!APP.sampler || !APP.audioReady) return;
+    try { APP.sampler.triggerAttackRelease(midiToNote(midi), durSecs, Tone.now()); } catch(_) {}
+  }, delayMs);
+  APP.theoryTimeouts.push(id);
+}
+
 // ── PLAYBACK HELPERS ──────────────────────────────────────────
 
 function playNote(note, dur = 1.5) {

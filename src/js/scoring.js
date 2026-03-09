@@ -31,10 +31,10 @@ function computeFluency(answers) {
   if (!correct.length) return 0;
   const scores = correct.map(a => {
     const t = a.responseTimeMs;
-    if (t <= 2000) return 100;
-    if (t <= 4000) return 80;
-    if (t <= 6000) return 60;
-    if (t <= 10000) return 30;
+    if (t <= 4000)  return 100;
+    if (t <= 6000)  return 80;
+    if (t <= 8000)  return 60;
+    if (t <= 12000) return 30;
     return 0;
   });
   return Math.round(scores.reduce((s,v) => s+v, 0) / scores.length);
@@ -95,9 +95,36 @@ function computeItemScores(area) {
 function computeLevelProgress() {
   const lvl = APP.data.user.currentLevel;
   const areas = getAreasByLevel(lvl);
-  const scores = areas.map(a => computeAreaScores(a).overall);
-  if (!scores.length) return 0;
-  return Math.round(scores.reduce((s,v) => s+v, 0) / scores.length);
+  if (!areas.length) return 0;
+  const progresses = areas.map(area => {
+    const answers = getAnswersForArea(area);
+    const s = computeAreaScores(area);
+    const avg = (s.accuracy + s.fluency + s.retention) / 3;
+    const answerP = Math.min(answers.length / 50, 1);
+    const scoreP  = Math.min(avg / 85, 1);
+    return (answerP + scoreP) / 2;
+  });
+  return Math.round(progresses.reduce((s,v) => s+v, 0) / progresses.length * 100);
+}
+
+function computeLevelProgressLabel() {
+  const lvl = APP.data.user.currentLevel;
+  const areas = getAreasByLevel(lvl);
+  if (!areas.length) return '';
+  // Find the bottleneck area (lowest combined progress)
+  let worstArea = areas[0], worstP = Infinity;
+  areas.forEach(area => {
+    const answers = getAnswersForArea(area);
+    const s = computeAreaScores(area);
+    const avg = (s.accuracy + s.fluency + s.retention) / 3;
+    const p = Math.min(answers.length / 50, 1) + Math.min(avg / 85, 1);
+    if (p < worstP) { worstP = p; worstArea = area; }
+  });
+  const answers = getAnswersForArea(worstArea);
+  const s = computeAreaScores(worstArea);
+  const avg = Math.round((s.accuracy + s.fluency + s.retention) / 3);
+  const prefix = areas.length > 1 ? `${AREA_CONFIG[worstArea].name}: ` : '';
+  return `${prefix}${Math.min(answers.length, 50)}/50 answers · avg ${avg}% / 85%`;
 }
 
 function checkLevelUnlock() {
@@ -105,8 +132,10 @@ function checkLevelUnlock() {
   if (lvl >= 8) return false;
   const areas = getAreasByLevel(lvl);
   if (!areas.length) return false;
-  // Check all areas: avg(accuracy, fluency, retention) >= 85
+  // Each area needs ≥ 50 answers AND avg(accuracy, fluency, retention) ≥ 85
   for (const area of areas) {
+    const answers = getAnswersForArea(area);
+    if (answers.length < 50) return false;
     const scores = computeAreaScores(area);
     const avg = Math.round((scores.accuracy + scores.fluency + scores.retention) / 3);
     if (avg < 85) return false;
