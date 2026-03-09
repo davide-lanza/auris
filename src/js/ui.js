@@ -39,11 +39,12 @@ function renderHome(el) {
       <div class="level-progress-bar" style="width:${lvlProgress}%"></div>
     </div>
     <div class="level-progress-text">${lvlProgress}% toward Level ${Math.min(level+1,8)} · ${LEVEL_NAMES[Math.min(level+1,8)]}</div>
+    <div style="font-size:11px;color:var(--dim);margin-top:2px;text-align:center">${computeLevelProgressLabel()}</div>
 
     ${canUnlock && level < 8 ? `
     <div class="unlock-banner fade-in">
       <div class="unlock-title">🎉 Ready to advance!</div>
-      <div class="unlock-sub">100+ answers · avg 85%+ on all three metrics</div>
+      <div class="unlock-sub">50+ answers · avg 85%+ on all three metrics</div>
       <button class="unlock-btn" onclick="unlockNextLevel()">Unlock Level ${level+1} →</button>
     </div>` : ''}
 
@@ -430,21 +431,39 @@ function toggleTheorySection(header) {
 function theoryPlayInterval(sym) {
   const d = INTERVAL_DATA[sym];
   if (!d) return;
-  playInterval(60, d.semitones, 'ascending');
+  stopTheoryAudio();
+  _theoryNote(60, 1.5, 0);
+  _theoryNote(60 + d.semitones, 1.5, 650);
 }
 
 function theoryPlayMelody(sym, direction) {
-  playIntervalMelody(sym, direction);
+  const entry = INTERVAL_MELODIES[sym];
+  if (!entry) return;
+  const mel = entry[direction] || entry.asc;
+  if (!mel) return;
+  stopTheoryAudio();
+  let ms = 0;
+  mel.notes.forEach(({ st, dur }) => {
+    const secs = DUR_SECS[dur] || 0.75;
+    _theoryNote(60 + st, secs * 0.9, ms);
+    ms += secs * 1000;
+  });
 }
 
 function theoryPlayChord(key) {
   const d = CHORD_DATA[key];
   if (!d) return;
-  playChord(60, d.formula);
+  stopTheoryAudio();
+  d.formula.forEach((f, i) => _theoryNote(60 + f, 2, i * 120));
 }
 
 function theoryPlayCadence(key) {
-  playCadence(key);
+  const prog = CADENCE_CHORDS[key];
+  if (!prog) return;
+  stopTheoryAudio();
+  prog.forEach((chord, ci) => {
+    chord.forEach((midi, ni) => _theoryNote(midi, 1.8, ci * 2200 + ni * 80));
+  });
 }
 
 // ----- PROGRESS -----
@@ -470,7 +489,7 @@ function renderProgress(el) {
   const metricColor = (v) => v >= 90 ? 'var(--green)' : v >= 60 ? 'var(--yellow)' : 'var(--red)';
   const metricDesc = {
     Accuracy:  'Correct answers over your last 30 questions, averaged by session (max 10/day). Core measure of how well you recognise this area.',
-    Fluency:   'How quickly you answer correctly. Under 2 s = full marks, scaling down to 0 at 10 s. Speed means the pattern is automatic, not just analysed.',
+    Fluency:   'How quickly you answer correctly. Under 4 s = full marks, scaling down to 0 at 12 s. Speed means the pattern is automatic, not just analysed.',
     Retention: 'Weighted accuracy that gives extra credit when you answer correctly after a long break (≥ 20 h gap). High retention means the knowledge is truly sticking.',
   };
   const metrics = [
@@ -518,7 +537,7 @@ function renderProgress(el) {
 
   const totalAnswers = getAnswersForArea(APP.progressArea).length;
   const unlockAvg = Math.round((scores.accuracy + scores.fluency + scores.retention) / 3);
-  const unlockProgress = `${totalAnswers}/100 answers · avg ${unlockAvg}% / 85% target`;
+  const unlockProgress = `${Math.min(totalAnswers, 50)}/50 answers · avg ${unlockAvg}% / 85% target`;
 
   el.innerHTML = `
     <div style="padding:16px 16px 4px">

@@ -1072,6 +1072,25 @@ function loadEmbeddedSampler() {
   });
 }
 
+// ── THEORY AUDIO MANAGEMENT ───────────────────────────────────
+// All theory playback goes through timeout-based scheduling so any
+// in-progress audio can be cleanly interrupted when a new button is tapped.
+
+function stopTheoryAudio() {
+  (APP.theoryTimeouts || []).forEach(id => clearTimeout(id));
+  APP.theoryTimeouts = [];
+  if (APP.sampler) { try { APP.sampler.releaseAll(); } catch(_) {} }
+}
+
+function _theoryNote(midi, durSecs, delayMs) {
+  if (!APP.theoryTimeouts) APP.theoryTimeouts = [];
+  const id = setTimeout(() => {
+    if (!APP.sampler || !APP.audioReady) return;
+    try { APP.sampler.triggerAttackRelease(midiToNote(midi), durSecs, Tone.now()); } catch(_) {}
+  }, delayMs);
+  APP.theoryTimeouts.push(id);
+}
+
 // ── PLAYBACK HELPERS ──────────────────────────────────────────
 
 function playNote(note, dur = 1.5) {
@@ -1205,10 +1224,10 @@ function computeFluency(answers) {
   if (!correct.length) return 0;
   const scores = correct.map(a => {
     const t = a.responseTimeMs;
-    if (t <= 2000) return 100;
-    if (t <= 4000) return 80;
-    if (t <= 6000) return 60;
-    if (t <= 10000) return 30;
+    if (t <= 4000)  return 100;
+    if (t <= 6000)  return 80;
+    if (t <= 8000)  return 60;
+    if (t <= 12000) return 30;
     return 0;
   });
   return Math.round(scores.reduce((s,v) => s+v, 0) / scores.length);
@@ -1269,9 +1288,36 @@ function computeItemScores(area) {
 function computeLevelProgress() {
   const lvl = APP.data.user.currentLevel;
   const areas = getAreasByLevel(lvl);
-  const scores = areas.map(a => computeAreaScores(a).overall);
-  if (!scores.length) return 0;
-  return Math.round(scores.reduce((s,v) => s+v, 0) / scores.length);
+  if (!areas.length) return 0;
+  const progresses = areas.map(area => {
+    const answers = getAnswersForArea(area);
+    const s = computeAreaScores(area);
+    const avg = (s.accuracy + s.fluency + s.retention) / 3;
+    const answerP = Math.min(answers.length / 50, 1);
+    const scoreP  = Math.min(avg / 85, 1);
+    return (answerP + scoreP) / 2;
+  });
+  return Math.round(progresses.reduce((s,v) => s+v, 0) / progresses.length * 100);
+}
+
+function computeLevelProgressLabel() {
+  const lvl = APP.data.user.currentLevel;
+  const areas = getAreasByLevel(lvl);
+  if (!areas.length) return '';
+  // Find the bottleneck area (lowest combined progress)
+  let worstArea = areas[0], worstP = Infinity;
+  areas.forEach(area => {
+    const answers = getAnswersForArea(area);
+    const s = computeAreaScores(area);
+    const avg = (s.accuracy + s.fluency + s.retention) / 3;
+    const p = Math.min(answers.length / 50, 1) + Math.min(avg / 85, 1);
+    if (p < worstP) { worstP = p; worstArea = area; }
+  });
+  const answers = getAnswersForArea(worstArea);
+  const s = computeAreaScores(worstArea);
+  const avg = Math.round((s.accuracy + s.fluency + s.retention) / 3);
+  const prefix = areas.length > 1 ? `${AREA_CONFIG[worstArea].name}: ` : '';
+  return `${prefix}${Math.min(answers.length, 50)}/50 answers · avg ${avg}% / 85%`;
 }
 
 function checkLevelUnlock() {
@@ -1279,10 +1325,10 @@ function checkLevelUnlock() {
   if (lvl >= 8) return false;
   const areas = getAreasByLevel(lvl);
   if (!areas.length) return false;
-  // Each area needs ≥ 100 answers AND avg(accuracy, fluency, retention) ≥ 85
+  // Each area needs ≥ 50 answers AND avg(accuracy, fluency, retention) ≥ 85
   for (const area of areas) {
     const answers = getAnswersForArea(area);
-    if (answers.length < 100) return false;
+    if (answers.length < 50) return false;
     const scores = computeAreaScores(area);
     const avg = Math.round((scores.accuracy + scores.fluency + scores.retention) / 3);
     if (avg < 85) return false;
@@ -1750,11 +1796,12 @@ function renderHome(el) {
       <div class="level-progress-bar" style="width:${lvlProgress}%"></div>
     </div>
     <div class="level-progress-text">${lvlProgress}% toward Level ${Math.min(level+1,8)} · ${LEVEL_NAMES[Math.min(level+1,8)]}</div>
+    <div style="font-size:11px;color:var(--dim);margin-top:2px;text-align:center">${computeLevelProgressLabel()}</div>
 
     ${canUnlock && level < 8 ? `
     <div class="unlock-banner fade-in">
       <div class="unlock-title">🎉 Ready to advance!</div>
-      <div class="unlock-sub">100+ answers · avg 85%+ on all three metrics</div>
+      <div class="unlock-sub">50+ answers · avg 85%+ on all three metrics</div>
       <button class="unlock-btn" onclick="unlockNextLevel()">Unlock Level ${level+1} →</button>
     </div>` : ''}
 
@@ -2141,21 +2188,39 @@ function toggleTheorySection(header) {
 function theoryPlayInterval(sym) {
   const d = INTERVAL_DATA[sym];
   if (!d) return;
-  playInterval(60, d.semitones, 'ascending');
+  stopTheoryAudio();
+  _theoryNote(60, 1.5, 0);
+  _theoryNote(60 + d.semitones, 1.5, 650);
 }
 
 function theoryPlayMelody(sym, direction) {
-  playIntervalMelody(sym, direction);
+  const entry = INTERVAL_MELODIES[sym];
+  if (!entry) return;
+  const mel = entry[direction] || entry.asc;
+  if (!mel) return;
+  stopTheoryAudio();
+  let ms = 0;
+  mel.notes.forEach(({ st, dur }) => {
+    const secs = DUR_SECS[dur] || 0.75;
+    _theoryNote(60 + st, secs * 0.9, ms);
+    ms += secs * 1000;
+  });
 }
 
 function theoryPlayChord(key) {
   const d = CHORD_DATA[key];
   if (!d) return;
-  playChord(60, d.formula);
+  stopTheoryAudio();
+  d.formula.forEach((f, i) => _theoryNote(60 + f, 2, i * 120));
 }
 
 function theoryPlayCadence(key) {
-  playCadence(key);
+  const prog = CADENCE_CHORDS[key];
+  if (!prog) return;
+  stopTheoryAudio();
+  prog.forEach((chord, ci) => {
+    chord.forEach((midi, ni) => _theoryNote(midi, 1.8, ci * 2200 + ni * 80));
+  });
 }
 
 // ----- PROGRESS -----
@@ -2181,7 +2246,7 @@ function renderProgress(el) {
   const metricColor = (v) => v >= 90 ? 'var(--green)' : v >= 60 ? 'var(--yellow)' : 'var(--red)';
   const metricDesc = {
     Accuracy:  'Correct answers over your last 30 questions, averaged by session (max 10/day). Core measure of how well you recognise this area.',
-    Fluency:   'How quickly you answer correctly. Under 2 s = full marks, scaling down to 0 at 10 s. Speed means the pattern is automatic, not just analysed.',
+    Fluency:   'How quickly you answer correctly. Under 4 s = full marks, scaling down to 0 at 12 s. Speed means the pattern is automatic, not just analysed.',
     Retention: 'Weighted accuracy that gives extra credit when you answer correctly after a long break (≥ 20 h gap). High retention means the knowledge is truly sticking.',
   };
   const metrics = [
@@ -2229,7 +2294,7 @@ function renderProgress(el) {
 
   const totalAnswers = getAnswersForArea(APP.progressArea).length;
   const unlockAvg = Math.round((scores.accuracy + scores.fluency + scores.retention) / 3);
-  const unlockProgress = `${totalAnswers}/100 answers · avg ${unlockAvg}% / 85% target`;
+  const unlockProgress = `${Math.min(totalAnswers, 50)}/50 answers · avg ${unlockAvg}% / 85% target`;
 
   el.innerHTML = `
     <div style="padding:16px 16px 4px">

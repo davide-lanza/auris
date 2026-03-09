@@ -61,7 +61,7 @@ Every time you answer a question the app records whether you were correct and ho
 The percentage of correct answers over your last 30 questions, averaged by session (capped at 10 answers per day to prevent grinding). This is the core measure: do you know your intervals?
 
 **Fluency (30% of overall score)**
-How quickly you answer correctly. Under 2 seconds = full marks. The score scales down to zero at 10 seconds. Speed is not about rushing — it measures whether the recognition has become automatic rather than conscious analysis.
+How quickly you answer correctly. Under 4 seconds = full marks. The score scales down to zero at 12 seconds. Speed is not about rushing — it measures whether the recognition has become automatic rather than conscious analysis.
 
 **Retention (30% of overall score)**
 A weighted accuracy score that gives extra credit when you answer correctly after a long gap (20 hours or more since your last answer in that area). High retention means the learning is genuinely sticking, not just fresh in short-term memory.
@@ -94,7 +94,17 @@ The Theory tab is a complete reference for the **entire curriculum across all 8 
 
 ## Version History
 
-### v1.2 — 9 March 2026 (current)
+### v1.3 — 9 March 2026 (current)
+
+**Tuning and fixes:**
+- Fluency now rewards up to 4 seconds for full marks (was 2 s — too strict). Thresholds: ≤ 4 s = 100, ≤ 6 s = 80, ≤ 8 s = 60, ≤ 12 s = 30, above = 0
+- Minimum answers for level unlock lowered from 100 to **50** — enough to be statistically valid without being discouraging
+- Home screen progress bar now reflects **both** unlock gates, not just the score. The bar fills to 100% only when both conditions are on track (50 % weight to answer count, 50 % to score). A subtitle line shows the bottleneck: e.g. "12/50 answers · avg 68% / 85%"
+- Theory tab audio: tapping any play button now **stops the current sound immediately** and starts the new one. Previously sounds would overlap or a melody would keep playing after you'd moved on
+
+---
+
+### v1.2 — 9 March 2026
 *Two sessions of improvements on top of the initial refactored release.*
 
 **Metrics & levelling:**
