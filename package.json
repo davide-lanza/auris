@@ -1,0 +1,10 @@
+{
+  "name": "auris",
+  "version": "1.0.0",
+  "description": "Auris — Professional ear training app by Davide · Dear Piano",
+  "scripts": {
+    "build": "node build.js"
+  },
+  "author": "Davide from Dear Piano",
+  "license": "MIT"
+}
