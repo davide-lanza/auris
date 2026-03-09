@@ -237,6 +237,25 @@ function getAllIntervalsAtLevel(level) {
   return [...new Set([...d.intervals.ascPool, ...d.intervals.desPool, ...d.intervals.harPool])];
 }
 
+// Returns the first level at which the item is introduced.
+function getLevelIntroduced(type, key) {
+  for (let lv = 1; lv <= 8; lv++) {
+    const def = LEVEL_DEFS[lv];
+    if (!def) continue;
+    if (type === 'interval') {
+      const all = [...def.intervals.ascPool, ...def.intervals.desPool, ...def.intervals.harPool];
+      if (all.includes(key)) return lv;
+    } else if (type === 'chord') {
+      if (def.chords && def.chords.pool && def.chords.pool.includes(key)) return lv;
+    } else if (type === 'cadence') {
+      if (def.cadences && def.cadences.pool && def.cadences.pool.includes(key)) return lv;
+    } else if (type === 'modulation') {
+      if (def.modulation && def.modulation.pool && def.modulation.pool.includes(key)) return lv;
+    }
+  }
+  return 1;
+}
+
 // Returns the union of all note classes available across `keys`.
 function getUnionNoteClasses(keys) {
   const classes = new Set();

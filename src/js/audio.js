@@ -101,6 +101,27 @@ function playNotesArpeggio(midiArr) {
   });
 }
 
+// Duration chars → seconds at 80 BPM (1 beat = 0.75 s)
+const DUR_SECS = { q: 0.75, e: 0.375, h: 1.5, w: 3.0 };
+
+function playIntervalMelody(sym, direction) {
+  if (!APP.sampler || !APP.audioReady) return;
+  const entry = INTERVAL_MELODIES[sym];
+  if (!entry) return;
+  const mel = entry[direction] || entry.asc;
+  if (!mel) return;
+  const root = 60; // C4
+  const now  = Tone.now();
+  let t = 0;
+  mel.notes.forEach(({ st, dur }) => {
+    const midi = root + st;
+    const note = midiToNote(midi);
+    const secs = DUR_SECS[dur] || 0.75;
+    try { APP.sampler.triggerAttackRelease(note, secs * 0.9, now + t); } catch (_) {}
+    t += secs;
+  });
+}
+
 function playInterval(rootMidi, semitones, mode) {
   const lower = rootMidi;
   const upper = rootMidi + semitones;

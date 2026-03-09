@@ -142,6 +142,30 @@ html, body {
 }
 .theory-listen-btn:active { background: var(--gold); color: #0A0912; }
 
+/* ===== MELODY BUTTONS ===== */
+.theory-mel-btns { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+.theory-mel-btn {
+  background: transparent; border: 1px solid var(--border); border-radius: 12px;
+  color: var(--gold-bright); font-size: 11px; padding: 3px 8px; cursor: pointer;
+  white-space: nowrap; max-width: 180px; overflow: hidden; text-overflow: ellipsis;
+}
+.theory-mel-btn:active { background: rgba(201,168,76,0.15); }
+
+/* ===== THEORY ITEM FUTURE ===== */
+.theory-item-future { opacity: 0.55; }
+.theory-anchor { font-size: 11px; color: var(--gold); margin-top: 3px; }
+
+/* ===== NAV UNLOCK DOT ===== */
+.nav-unlock-dot {
+  position: absolute; top: -2px; right: -4px; font-size: 11px; line-height: 1;
+  animation: pulse-dot 1.5s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.6; transform: scale(0.85); }
+}
+.nav-item { position: relative; }
+
 /* ===== UNLOCK BANNER ===== */
 .unlock-banner {
   margin: 0 16px 12px; background: linear-gradient(135deg, rgba(201,168,76,0.15), rgba(201,168,76,0.05));
@@ -488,6 +512,154 @@ const INTERVAL_DATA = {
 
 // Interval pools per level are now defined in LEVEL_DEFS (src/data/levels.js)
 
+// ── MELODY SNIPPETS ───────────────────────────────────────────
+// Semitone offsets from C4 (MIDI 60), with durations:
+//   q = quarter (0.75 s at 80 BPM), e = eighth (0.375 s),
+//   h = half (1.5 s), w = whole (3.0 s)
+// asc = ascending direction showcase, des = descending
+const INTERVAL_MELODIES = {
+  'm2': {
+    // Jaws: the iconic two-note motif alternating semitones, building tension
+    asc: { song: 'Jaws', notes: [
+      {st:4,dur:'q'},{st:5,dur:'q'},{st:4,dur:'q'},{st:5,dur:'q'},
+      {st:4,dur:'q'},{st:5,dur:'q'},{st:4,dur:'e'},{st:5,dur:'e'},
+      {st:4,dur:'e'},{st:5,dur:'e'},{st:4,dur:'h'},
+    ]},
+    // Joy to the World: stepwise descent C B A G F# F E D C
+    des: { song: 'Joy to the World', notes: [
+      {st:12,dur:'q'},{st:11,dur:'q'},{st:9,dur:'h'},
+      {st:7,dur:'q'},{st:6,dur:'q'},{st:5,dur:'h'},
+      {st:4,dur:'q'},{st:2,dur:'q'},{st:0,dur:'h'},
+    ]},
+  },
+  'M2': {
+    // Happy Birthday: two full phrases
+    asc: { song: 'Happy Birthday', notes: [
+      {st:0,dur:'q'},{st:0,dur:'e'},{st:2,dur:'q'},
+      {st:0,dur:'q'},{st:5,dur:'q'},{st:4,dur:'h'},
+      {st:0,dur:'q'},{st:0,dur:'e'},{st:2,dur:'q'},
+      {st:0,dur:'q'},{st:7,dur:'q'},{st:5,dur:'h'},
+    ]},
+    // Mary Had a Little Lamb: main melody + second phrase
+    des: { song: 'Mary Had a Little Lamb', notes: [
+      {st:4,dur:'q'},{st:2,dur:'q'},{st:0,dur:'q'},{st:2,dur:'q'},
+      {st:4,dur:'q'},{st:4,dur:'q'},{st:4,dur:'h'},
+      {st:2,dur:'q'},{st:2,dur:'q'},{st:2,dur:'h'},
+      {st:4,dur:'q'},{st:7,dur:'q'},{st:7,dur:'h'},
+    ]},
+  },
+  'm3': {
+    // Smoke on the Water: full iconic three-phrase riff
+    asc: { song: 'Smoke on the Water', notes: [
+      {st:7,dur:'q'},{st:10,dur:'q'},{st:12,dur:'h'},
+      {st:7,dur:'q'},{st:10,dur:'q'},{st:13,dur:'e'},{st:12,dur:'h'},
+      {st:7,dur:'q'},{st:10,dur:'q'},{st:12,dur:'e'},{st:10,dur:'e'},{st:7,dur:'h'},
+    ]},
+    // Hey Jude: opening descent and resolution
+    des: { song: 'Hey Jude', notes: [
+      {st:7,dur:'q'},{st:5,dur:'q'},{st:4,dur:'h'},
+      {st:3,dur:'q'},{st:0,dur:'q'},{st:2,dur:'h'},
+      {st:0,dur:'q'},{st:2,dur:'q'},{st:3,dur:'q'},{st:2,dur:'h'},
+    ]},
+  },
+  'M3': {
+    // Oh When the Saints: opening + "go marching in"
+    asc: { song: 'When the Saints', notes: [
+      {st:0,dur:'q'},{st:4,dur:'q'},{st:5,dur:'q'},{st:7,dur:'h'},
+      {st:0,dur:'q'},{st:4,dur:'q'},{st:5,dur:'q'},{st:7,dur:'h'},
+      {st:4,dur:'q'},{st:7,dur:'q'},{st:9,dur:'q'},{st:7,dur:'h'},
+    ]},
+    // Summertime: opening phrase + continuation
+    des: { song: 'Summertime', notes: [
+      {st:9,dur:'q'},{st:7,dur:'e'},{st:6,dur:'e'},
+      {st:4,dur:'q'},{st:5,dur:'q'},{st:4,dur:'h'},
+      {st:2,dur:'q'},{st:4,dur:'q'},{st:5,dur:'q'},{st:7,dur:'h'},
+    ]},
+  },
+  'P4': {
+    // Here Comes the Bride: opening + second phrase
+    asc: { song: 'Here Comes the Bride', notes: [
+      {st:0,dur:'e'},{st:5,dur:'q'},{st:5,dur:'e'},{st:5,dur:'q'},
+      {st:7,dur:'q'},{st:5,dur:'q'},{st:4,dur:'q'},{st:2,dur:'h'},
+      {st:5,dur:'e'},{st:9,dur:'q'},{st:7,dur:'e'},{st:5,dur:'q'},{st:4,dur:'h'},
+    ]},
+    // Eine Kleine Nachtmusik: two-phrase opening
+    des: { song: 'Eine Kleine Nachtmusik', notes: [
+      {st:7,dur:'e'},{st:7,dur:'e'},{st:7,dur:'e'},{st:3,dur:'q'},
+      {st:10,dur:'e'},{st:10,dur:'e'},{st:10,dur:'e'},{st:7,dur:'q'},
+      {st:7,dur:'q'},{st:3,dur:'q'},{st:3,dur:'q'},{st:3,dur:'q'},{st:0,dur:'h'},
+    ]},
+  },
+  'TT': {
+    // The Simpsons: the quirky tritone motif + resolution
+    asc: { song: 'The Simpsons Theme', notes: [
+      {st:0,dur:'e'},{st:4,dur:'e'},{st:6,dur:'q'},
+      {st:4,dur:'e'},{st:6,dur:'q'},{st:4,dur:'h'},
+      {st:3,dur:'q'},{st:1,dur:'q'},{st:0,dur:'h'},
+    ]},
+  },
+  'P5': {
+    // Star Wars: iconic opening motif
+    asc: { song: 'Star Wars – Main Theme', notes: [
+      {st:0,dur:'q'},{st:0,dur:'q'},{st:0,dur:'q'},
+      {st:-9,dur:'e'},{st:-2,dur:'e'},{st:0,dur:'h'},
+      {st:5,dur:'q'},{st:4,dur:'q'},{st:0,dur:'q'},{st:2,dur:'h'},
+    ]},
+    // The Flintstones: bouncy main hook
+    des: { song: 'The Flintstones', notes: [
+      {st:7,dur:'q'},{st:0,dur:'q'},{st:7,dur:'e'},{st:10,dur:'e'},
+      {st:7,dur:'q'},{st:5,dur:'q'},{st:4,dur:'h'},
+      {st:5,dur:'q'},{st:4,dur:'q'},{st:2,dur:'q'},{st:0,dur:'h'},
+    ]},
+  },
+  'm6': {
+    // The Entertainer (Scott Joplin): opening run + the m6 leap + resolution
+    asc: { song: 'The Entertainer', notes: [
+      {st:0,dur:'e'},{st:2,dur:'e'},{st:4,dur:'e'},
+      {st:8,dur:'q'},{st:7,dur:'q'},{st:4,dur:'e'},{st:7,dur:'h'},
+      {st:7,dur:'q'},{st:6,dur:'e'},{st:2,dur:'e'},{st:6,dur:'h'},
+    ]},
+  },
+  'M6': {
+    // My Bonnie Lies Over the Ocean: full first phrase
+    asc: { song: 'My Bonnie Lies Over the Ocean', notes: [
+      {st:7,dur:'q'},{st:12,dur:'q'},{st:12,dur:'q'},{st:12,dur:'q'},
+      {st:9,dur:'q'},{st:7,dur:'q'},{st:4,dur:'h'},
+      {st:2,dur:'h'},{st:4,dur:'q'},{st:7,dur:'q'},{st:9,dur:'h'},
+    ]},
+  },
+  'm7': {
+    // Somewhere (West Side Story): "There's a place for us"
+    asc: { song: 'Somewhere (West Side Story)', notes: [
+      {st:0,dur:'q'},{st:10,dur:'h'},{st:9,dur:'q'},
+      {st:7,dur:'q'},{st:5,dur:'q'},{st:4,dur:'h'},
+      {st:5,dur:'q'},{st:3,dur:'q'},{st:2,dur:'q'},{st:0,dur:'h'},
+    ]},
+  },
+  'M7': {
+    // Take On Me (A-ha): ascending verse motif
+    asc: { song: 'Take On Me – A-ha', notes: [
+      {st:0,dur:'e'},{st:4,dur:'e'},{st:7,dur:'e'},
+      {st:11,dur:'q'},{st:9,dur:'e'},{st:7,dur:'q'},{st:4,dur:'h'},
+      {st:0,dur:'e'},{st:4,dur:'e'},{st:9,dur:'q'},{st:7,dur:'q'},{st:5,dur:'h'},
+    ]},
+  },
+  'P8': {
+    // Somewhere Over the Rainbow: octave leap + "way up high"
+    asc: { song: 'Somewhere Over the Rainbow', notes: [
+      {st:0,dur:'q'},{st:12,dur:'h'},
+      {st:11,dur:'q'},{st:12,dur:'e'},{st:9,dur:'q'},{st:7,dur:'h'},
+      {st:4,dur:'q'},{st:5,dur:'q'},{st:7,dur:'h'},
+    ]},
+    // Willow Weep for Me: descending octave + resolution
+    des: { song: 'Willow Weep for Me', notes: [
+      {st:12,dur:'q'},{st:0,dur:'h'},
+      {st:2,dur:'q'},{st:4,dur:'q'},{st:5,dur:'h'},
+      {st:7,dur:'q'},{st:5,dur:'q'},{st:4,dur:'q'},{st:2,dur:'h'},
+    ]},
+  },
+};
+
 
 /* === data/chords.js === */
 const CHORD_DATA = {
@@ -769,6 +941,25 @@ function getAllIntervalsAtLevel(level) {
   return [...new Set([...d.intervals.ascPool, ...d.intervals.desPool, ...d.intervals.harPool])];
 }
 
+// Returns the first level at which the item is introduced.
+function getLevelIntroduced(type, key) {
+  for (let lv = 1; lv <= 8; lv++) {
+    const def = LEVEL_DEFS[lv];
+    if (!def) continue;
+    if (type === 'interval') {
+      const all = [...def.intervals.ascPool, ...def.intervals.desPool, ...def.intervals.harPool];
+      if (all.includes(key)) return lv;
+    } else if (type === 'chord') {
+      if (def.chords && def.chords.pool && def.chords.pool.includes(key)) return lv;
+    } else if (type === 'cadence') {
+      if (def.cadences && def.cadences.pool && def.cadences.pool.includes(key)) return lv;
+    } else if (type === 'modulation') {
+      if (def.modulation && def.modulation.pool && def.modulation.pool.includes(key)) return lv;
+    }
+  }
+  return 1;
+}
+
 // Returns the union of all note classes available across `keys`.
 function getUnionNoteClasses(keys) {
   const classes = new Set();
@@ -907,6 +1098,27 @@ function playNotesArpeggio(midiArr) {
   });
 }
 
+// Duration chars → seconds at 80 BPM (1 beat = 0.75 s)
+const DUR_SECS = { q: 0.75, e: 0.375, h: 1.5, w: 3.0 };
+
+function playIntervalMelody(sym, direction) {
+  if (!APP.sampler || !APP.audioReady) return;
+  const entry = INTERVAL_MELODIES[sym];
+  if (!entry) return;
+  const mel = entry[direction] || entry.asc;
+  if (!mel) return;
+  const root = 60; // C4
+  const now  = Tone.now();
+  let t = 0;
+  mel.notes.forEach(({ st, dur }) => {
+    const midi = root + st;
+    const note = midiToNote(midi);
+    const secs = DUR_SECS[dur] || 0.75;
+    try { APP.sampler.triggerAttackRelease(note, secs * 0.9, now + t); } catch (_) {}
+    t += secs;
+  });
+}
+
 function playInterval(rootMidi, semitones, mode) {
   const lower = rootMidi;
   const upper = rootMidi + semitones;
@@ -1027,9 +1239,8 @@ function computeAreaScores(area) {
   const accuracy = computeAccuracy(answers);
   const fluency = computeFluency(answers);
   const retention = computeRetention(answers);
-  const consistency = computeConsistency(answers);
-  const overall = Math.round(accuracy * 0.35 + fluency * 0.25 + retention * 0.25 + consistency * 0.15);
-  return { accuracy, fluency, retention, consistency, overall };
+  const overall = Math.round(accuracy * 0.40 + fluency * 0.30 + retention * 0.30);
+  return { accuracy, fluency, retention, overall };
 }
 
 function computeItemScores(area) {
@@ -1062,21 +1273,11 @@ function checkLevelUnlock() {
   if (lvl >= 8) return false;
   const areas = getAreasByLevel(lvl);
   if (!areas.length) return false;
-  // Check all areas >= 90 for 3+ distinct days
-  const now = Date.now();
-  const msDay = 86400000;
+  // Check all areas: avg(accuracy, fluency, retention) >= 85
   for (const area of areas) {
-    const answers = getAnswersForArea(area);
-    // Get days where area overall was >= 90
-    const goodDays = new Set();
-    // Simplified: check if current overall is >= 90 and answers span 3+ days
     const scores = computeAreaScores(area);
-    if (scores.overall < 90) return false;
-    answers.forEach(a => {
-      const daysAgo = Math.floor((now - a.timestamp) / msDay);
-      if (daysAgo < 30) goodDays.add(dayKey(a.timestamp));
-    });
-    if (goodDays.size < 3) return false;
+    const avg = Math.round((scores.accuracy + scores.fluency + scores.retention) / 3);
+    if (avg < 85) return false;
   }
   return true;
 }
@@ -1399,12 +1600,12 @@ function buildPianoSVG(activeMidis = [], startMidi = 60, numOctaves = 2) {
 }
 
 function buildRadarChart(scores) {
-  const { accuracy, fluency, retention, consistency } = scores;
-  const vals = [accuracy, fluency, retention, consistency].map(v => v / 100);
-  const labels = ['Accuracy', 'Fluency', 'Retention', 'Consistency'];
-  const cx = 110, cy = 110, r = 80;
-  // 4 axes: top, right, bottom, left
-  const angles = [-Math.PI/2, 0, Math.PI/2, Math.PI];
+  const { accuracy, fluency, retention } = scores;
+  const vals = [accuracy, fluency, retention].map(v => v / 100);
+  const labels = ['Accuracy', 'Fluency', 'Retention'];
+  const cx = 110, cy = 115, r = 75;
+  // 3 axes: top, bottom-right, bottom-left
+  const angles = [-Math.PI/2, -Math.PI/2 + (2*Math.PI/3), -Math.PI/2 + (4*Math.PI/3)];
 
   // Grid rings
   let gridSvg = '';
@@ -1414,7 +1615,7 @@ function buildRadarChart(scores) {
   });
 
   // Axes
-  let axesSvg = angles.map((a, i) =>
+  let axesSvg = angles.map(a =>
     `<line x1="${cx}" y1="${cy}" x2="${cx + r * Math.cos(a)}" y2="${cy + r * Math.sin(a)}" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>`
   ).join('');
 
@@ -1431,8 +1632,8 @@ function buildRadarChart(scores) {
 
   // Score text
   let scoresSvg = angles.map((a, i) => {
-    const x = cx + (r * vals[i] + 8) * Math.cos(a);
-    const y = cy + (r * vals[i] + 8) * Math.sin(a);
+    const x = cx + (r * vals[i] + 10) * Math.cos(a);
+    const y = cy + (r * vals[i] + 10) * Math.sin(a);
     const pct = Math.round(vals[i] * 100);
     return `<text x="${x}" y="${y + 4}" text-anchor="middle" font-size="10" fill="var(--gold-bright)" font-family="sans-serif" font-weight="bold">${pct}</text>`;
   }).join('');
@@ -1562,7 +1763,7 @@ function renderHome(el) {
     ${canUnlock && level < 8 ? `
     <div class="unlock-banner fade-in">
       <div class="unlock-title">🎉 Ready to advance!</div>
-      <div class="unlock-sub">All areas at 90%+ for 3+ days</div>
+      <div class="unlock-sub">All areas avg 85%+ (Accuracy · Fluency · Retention)</div>
       <button class="unlock-btn" onclick="unlockNextLevel()">Unlock Level ${level+1} →</button>
     </div>` : ''}
 
@@ -1766,7 +1967,12 @@ function renderTheory(el) {
   el.innerHTML = `
     <div style="padding:16px 16px 8px">
       <div style="font-size:20px;font-weight:800">Theory Reference</div>
-      <div style="font-size:13px;color:var(--dim);margin-top:2px">Tap any section to expand</div>
+      <div style="font-size:13px;color:var(--dim);margin-top:2px">Complete curriculum — all 8 levels · tap to expand</div>
+      <div style="font-size:11px;color:var(--dim);margin-top:4px">
+        <span style="color:var(--green);font-weight:700">Lv ≤ ${level}</span> unlocked &nbsp;·&nbsp;
+        <span style="color:var(--gold);font-weight:700">Lv ${level}</span> current &nbsp;·&nbsp;
+        <span style="color:var(--dim2);font-weight:700">🔒 future</span>
+      </div>
     </div>
 
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;margin:0 16px 12px;overflow:hidden">
@@ -1785,15 +1991,36 @@ function renderTheory(el) {
   `;
 }
 
+function theoryLvlBadge(introLv, currentLv) {
+  const locked = introLv > currentLv;
+  const color  = locked ? 'var(--dim2)' : introLv === currentLv ? 'var(--gold)' : 'var(--green)';
+  return `<span style="font-size:9px;font-weight:700;letter-spacing:0.06em;color:${color};background:rgba(255,255,255,0.05);border-radius:4px;padding:1px 5px;margin-bottom:3px;display:inline-block">Lv${introLv}${locked ? ' 🔒' : ''}</span>`;
+}
+
 function theoryIntervalSection(level) {
-  const pool = getAllIntervalsAtLevel(level);
-  const items = pool.map(sym => {
-    const d = INTERVAL_DATA[sym];
-    return `<div class="theory-item">
+  // Show ALL intervals across all levels, sorted by semitones
+  const allSyms = Object.keys(INTERVAL_DATA).sort((a, b) => INTERVAL_DATA[a].semitones - INTERVAL_DATA[b].semitones);
+  const items = allSyms.map(sym => {
+    const d   = INTERVAL_DATA[sym];
+    const mel = INTERVAL_MELODIES[sym];
+    const melAsc = mel && mel.asc;
+    const melDes = mel && mel.des;
+    const introLv = getLevelIntroduced('interval', sym);
+    const locked  = introLv > level;
+    const melBtns = melAsc
+      ? `<div class="theory-mel-btns">
+          <button class="theory-mel-btn" onclick="theoryPlayMelody('${sym}','asc')">🎵 ${melAsc.song}</button>
+          ${melDes ? `<button class="theory-mel-btn" onclick="theoryPlayMelody('${sym}','des')">🎵 ${melDes.song} ↓</button>` : ''}
+        </div>`
+      : '';
+    return `<div class="theory-item${locked ? ' theory-item-future' : ''}">
       <div class="theory-symbol">${sym}</div>
       <div class="theory-info">
+        ${theoryLvlBadge(introLv, level)}
         <div class="theory-name">${d.name}</div>
-        <div class="theory-detail">${d.semitones} semitones · ${d.char}<br>${d.emoji} ${d.anchor}</div>
+        <div class="theory-detail">${d.semitones} semitone${d.semitones !== 1 ? 's' : ''} · ${d.char}</div>
+        <div class="theory-anchor">${d.emoji} ${d.anchor}</div>
+        ${melBtns}
       </div>
       <button class="theory-listen-btn" onclick="theoryPlayInterval('${sym}')">▶</button>
     </div>`;
@@ -1801,7 +2028,7 @@ function theoryIntervalSection(level) {
 
   return `
     <div class="theory-section-header" onclick="toggleTheorySection(this)">
-      <div class="theory-section-title">🎵 Intervals Reference</div>
+      <div class="theory-section-title">🎵 Intervals — Complete Reference</div>
       <div class="theory-chevron">▼</div>
     </div>
     <div class="theory-section-body">${items}</div>
@@ -1809,16 +2036,18 @@ function theoryIntervalSection(level) {
 }
 
 function theoryChordSection(level) {
-  const chordDef = LEVEL_DEFS[level].chords;
-  const pool = chordDef ? chordDef.pool : [];
-  const items = pool.map(key => {
-    const d = CHORD_DATA[key];
+  // Show ALL chord types across all levels
+  const items = Object.entries(CHORD_DATA).map(([key, d]) => {
+    const introLv = getLevelIntroduced('chord', key);
+    const locked  = introLv > level;
     const formulaStr = d.formula.join(' – ');
-    return `<div class="theory-item">
+    return `<div class="theory-item${locked ? ' theory-item-future' : ''}">
       <div class="theory-symbol" style="font-size:11px">${d.symbol || 'maj'}</div>
       <div class="theory-info">
+        ${theoryLvlBadge(introLv, level)}
         <div class="theory-name">${d.name}</div>
-        <div class="theory-detail">[${formulaStr}] · ${d.char}<br>${d.usage}</div>
+        <div class="theory-detail">[${formulaStr}] · ${d.char}</div>
+        <div class="theory-anchor" style="color:var(--dim)">${d.usage}</div>
       </div>
       <button class="theory-listen-btn" onclick="theoryPlayChord('${key}')">▶</button>
     </div>`;
@@ -1826,7 +2055,7 @@ function theoryChordSection(level) {
 
   return `
     <div class="theory-section-header" onclick="toggleTheorySection(this)">
-      <div class="theory-section-title">🎹 Chords Reference</div>
+      <div class="theory-section-title">🎹 Chords — Complete Reference</div>
       <div class="theory-chevron">▼</div>
     </div>
     <div class="theory-section-body">${items}</div>
@@ -1834,27 +2063,46 @@ function theoryChordSection(level) {
 }
 
 function theoryCadenceSection(level) {
-  const cadDef  = LEVEL_DEFS[level].cadences;
-  const cadPool = cadDef ? cadDef.pool : ['perfect'];
-  const cadences = cadPool.map(k => [k, CADENCE_DATA[k]]).filter(([, d]) => d);
-
-  const items = cadences.map(([key, d]) =>
-    `<div class="theory-item">
+  // Show ALL cadences
+  const cadItems = Object.entries(CADENCE_DATA).map(([key, d]) => {
+    const introLv = getLevelIntroduced('cadence', key);
+    const locked  = introLv > level;
+    return `<div class="theory-item${locked ? ' theory-item-future' : ''}">
       <div class="theory-symbol" style="font-size:10px;line-height:1.3">${d.roman}</div>
       <div class="theory-info">
+        ${theoryLvlBadge(introLv, level)}
         <div class="theory-name">${d.name}</div>
         <div class="theory-detail">${d.desc}</div>
       </div>
       <button class="theory-listen-btn" onclick="theoryPlayCadence('${key}')">▶</button>
-    </div>`
-  ).join('');
+    </div>`;
+  }).join('');
+
+  // Show ALL modulations
+  const modItems = Object.entries(MODULATION_DATA).map(([key, d]) => {
+    const introLv = getLevelIntroduced('modulation', key);
+    const locked  = introLv > level;
+    return `<div class="theory-item${locked ? ' theory-item-future' : ''}">
+      <div class="theory-symbol" style="font-size:9px;line-height:1.3">mod</div>
+      <div class="theory-info">
+        ${theoryLvlBadge(introLv, level)}
+        <div class="theory-name">${d.name}</div>
+        <div class="theory-detail">${d.desc}</div>
+      </div>
+    </div>`;
+  }).join('');
 
   return `
     <div class="theory-section-header" onclick="toggleTheorySection(this)">
-      <div class="theory-section-title">🔄 Cadences Reference</div>
+      <div class="theory-section-title">🔄 Cadences — Complete Reference</div>
       <div class="theory-chevron">▼</div>
     </div>
-    <div class="theory-section-body">${items}</div>
+    <div class="theory-section-body">${cadItems}</div>
+    <div class="theory-section-header" onclick="toggleTheorySection(this)" style="border-top:1px solid var(--border)">
+      <div class="theory-section-title">🌍 Modulation — Complete Reference</div>
+      <div class="theory-chevron">▼</div>
+    </div>
+    <div class="theory-section-body">${modItems}</div>
   `;
 }
 
@@ -1905,6 +2153,10 @@ function theoryPlayInterval(sym) {
   playInterval(60, d.semitones, 'ascending');
 }
 
+function theoryPlayMelody(sym, direction) {
+  playIntervalMelody(sym, direction);
+}
+
 function theoryPlayChord(key) {
   const d = CHORD_DATA[key];
   if (!d) return;
@@ -1937,10 +2189,9 @@ function renderProgress(el) {
   // Metric bars
   const metricColor = (v) => v >= 90 ? 'var(--green)' : v >= 60 ? 'var(--yellow)' : 'var(--red)';
   const metrics = [
-    { label: 'Accuracy', val: scores.accuracy, weight: '35%' },
-    { label: 'Fluency', val: scores.fluency, weight: '25%' },
-    { label: 'Retention', val: scores.retention, weight: '25%' },
-    { label: 'Consistency', val: scores.consistency, weight: '15%' },
+    { label: 'Accuracy', val: scores.accuracy, weight: '40%' },
+    { label: 'Fluency', val: scores.fluency, weight: '30%' },
+    { label: 'Retention', val: scores.retention, weight: '30%' },
   ];
   const metricBars = metrics.map(m => `
     <div class="metric-row">
@@ -2236,6 +2487,21 @@ function updateNav(active) {
     btn.classList.toggle('active', btn.dataset.nav === active);
   });
   document.getElementById('bottom-nav').style.display = 'flex';
+  // Show unlock badge on home nav when a level is ready
+  const homeBtn = document.querySelector('.nav-item[data-nav="home"]');
+  if (homeBtn && APP.data) {
+    const existing = homeBtn.querySelector('.nav-unlock-dot');
+    if (checkLevelUnlock() && APP.data.user.currentLevel < 8) {
+      if (!existing) {
+        const dot = document.createElement('span');
+        dot.className = 'nav-unlock-dot';
+        dot.textContent = '🔓';
+        homeBtn.querySelector('.nav-icon').appendChild(dot);
+      }
+    } else if (existing) {
+      existing.remove();
+    }
+  }
 }
 
 function updateHeader(screen) {

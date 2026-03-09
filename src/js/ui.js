@@ -43,7 +43,7 @@ function renderHome(el) {
     ${canUnlock && level < 8 ? `
     <div class="unlock-banner fade-in">
       <div class="unlock-title">🎉 Ready to advance!</div>
-      <div class="unlock-sub">All areas at 90%+ for 3+ days</div>
+      <div class="unlock-sub">All areas avg 85%+ (Accuracy · Fluency · Retention)</div>
       <button class="unlock-btn" onclick="unlockNextLevel()">Unlock Level ${level+1} →</button>
     </div>` : ''}
 
@@ -247,7 +247,12 @@ function renderTheory(el) {
   el.innerHTML = `
     <div style="padding:16px 16px 8px">
       <div style="font-size:20px;font-weight:800">Theory Reference</div>
-      <div style="font-size:13px;color:var(--dim);margin-top:2px">Tap any section to expand</div>
+      <div style="font-size:13px;color:var(--dim);margin-top:2px">Complete curriculum — all 8 levels · tap to expand</div>
+      <div style="font-size:11px;color:var(--dim);margin-top:4px">
+        <span style="color:var(--green);font-weight:700">Lv ≤ ${level}</span> unlocked &nbsp;·&nbsp;
+        <span style="color:var(--gold);font-weight:700">Lv ${level}</span> current &nbsp;·&nbsp;
+        <span style="color:var(--dim2);font-weight:700">🔒 future</span>
+      </div>
     </div>
 
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;margin:0 16px 12px;overflow:hidden">
@@ -266,15 +271,36 @@ function renderTheory(el) {
   `;
 }
 
+function theoryLvlBadge(introLv, currentLv) {
+  const locked = introLv > currentLv;
+  const color  = locked ? 'var(--dim2)' : introLv === currentLv ? 'var(--gold)' : 'var(--green)';
+  return `<span style="font-size:9px;font-weight:700;letter-spacing:0.06em;color:${color};background:rgba(255,255,255,0.05);border-radius:4px;padding:1px 5px;margin-bottom:3px;display:inline-block">Lv${introLv}${locked ? ' 🔒' : ''}</span>`;
+}
+
 function theoryIntervalSection(level) {
-  const pool = getAllIntervalsAtLevel(level);
-  const items = pool.map(sym => {
-    const d = INTERVAL_DATA[sym];
-    return `<div class="theory-item">
+  // Show ALL intervals across all levels, sorted by semitones
+  const allSyms = Object.keys(INTERVAL_DATA).sort((a, b) => INTERVAL_DATA[a].semitones - INTERVAL_DATA[b].semitones);
+  const items = allSyms.map(sym => {
+    const d   = INTERVAL_DATA[sym];
+    const mel = INTERVAL_MELODIES[sym];
+    const melAsc = mel && mel.asc;
+    const melDes = mel && mel.des;
+    const introLv = getLevelIntroduced('interval', sym);
+    const locked  = introLv > level;
+    const melBtns = melAsc
+      ? `<div class="theory-mel-btns">
+          <button class="theory-mel-btn" onclick="theoryPlayMelody('${sym}','asc')">🎵 ${melAsc.song}</button>
+          ${melDes ? `<button class="theory-mel-btn" onclick="theoryPlayMelody('${sym}','des')">🎵 ${melDes.song} ↓</button>` : ''}
+        </div>`
+      : '';
+    return `<div class="theory-item${locked ? ' theory-item-future' : ''}">
       <div class="theory-symbol">${sym}</div>
       <div class="theory-info">
+        ${theoryLvlBadge(introLv, level)}
         <div class="theory-name">${d.name}</div>
-        <div class="theory-detail">${d.semitones} semitones · ${d.char}<br>${d.emoji} ${d.anchor}</div>
+        <div class="theory-detail">${d.semitones} semitone${d.semitones !== 1 ? 's' : ''} · ${d.char}</div>
+        <div class="theory-anchor">${d.emoji} ${d.anchor}</div>
+        ${melBtns}
       </div>
       <button class="theory-listen-btn" onclick="theoryPlayInterval('${sym}')">▶</button>
     </div>`;
@@ -282,7 +308,7 @@ function theoryIntervalSection(level) {
 
   return `
     <div class="theory-section-header" onclick="toggleTheorySection(this)">
-      <div class="theory-section-title">🎵 Intervals Reference</div>
+      <div class="theory-section-title">🎵 Intervals — Complete Reference</div>
       <div class="theory-chevron">▼</div>
     </div>
     <div class="theory-section-body">${items}</div>
@@ -290,16 +316,18 @@ function theoryIntervalSection(level) {
 }
 
 function theoryChordSection(level) {
-  const chordDef = LEVEL_DEFS[level].chords;
-  const pool = chordDef ? chordDef.pool : [];
-  const items = pool.map(key => {
-    const d = CHORD_DATA[key];
+  // Show ALL chord types across all levels
+  const items = Object.entries(CHORD_DATA).map(([key, d]) => {
+    const introLv = getLevelIntroduced('chord', key);
+    const locked  = introLv > level;
     const formulaStr = d.formula.join(' – ');
-    return `<div class="theory-item">
+    return `<div class="theory-item${locked ? ' theory-item-future' : ''}">
       <div class="theory-symbol" style="font-size:11px">${d.symbol || 'maj'}</div>
       <div class="theory-info">
+        ${theoryLvlBadge(introLv, level)}
         <div class="theory-name">${d.name}</div>
-        <div class="theory-detail">[${formulaStr}] · ${d.char}<br>${d.usage}</div>
+        <div class="theory-detail">[${formulaStr}] · ${d.char}</div>
+        <div class="theory-anchor" style="color:var(--dim)">${d.usage}</div>
       </div>
       <button class="theory-listen-btn" onclick="theoryPlayChord('${key}')">▶</button>
     </div>`;
@@ -307,7 +335,7 @@ function theoryChordSection(level) {
 
   return `
     <div class="theory-section-header" onclick="toggleTheorySection(this)">
-      <div class="theory-section-title">🎹 Chords Reference</div>
+      <div class="theory-section-title">🎹 Chords — Complete Reference</div>
       <div class="theory-chevron">▼</div>
     </div>
     <div class="theory-section-body">${items}</div>
@@ -315,27 +343,46 @@ function theoryChordSection(level) {
 }
 
 function theoryCadenceSection(level) {
-  const cadDef  = LEVEL_DEFS[level].cadences;
-  const cadPool = cadDef ? cadDef.pool : ['perfect'];
-  const cadences = cadPool.map(k => [k, CADENCE_DATA[k]]).filter(([, d]) => d);
-
-  const items = cadences.map(([key, d]) =>
-    `<div class="theory-item">
+  // Show ALL cadences
+  const cadItems = Object.entries(CADENCE_DATA).map(([key, d]) => {
+    const introLv = getLevelIntroduced('cadence', key);
+    const locked  = introLv > level;
+    return `<div class="theory-item${locked ? ' theory-item-future' : ''}">
       <div class="theory-symbol" style="font-size:10px;line-height:1.3">${d.roman}</div>
       <div class="theory-info">
+        ${theoryLvlBadge(introLv, level)}
         <div class="theory-name">${d.name}</div>
         <div class="theory-detail">${d.desc}</div>
       </div>
       <button class="theory-listen-btn" onclick="theoryPlayCadence('${key}')">▶</button>
-    </div>`
-  ).join('');
+    </div>`;
+  }).join('');
+
+  // Show ALL modulations
+  const modItems = Object.entries(MODULATION_DATA).map(([key, d]) => {
+    const introLv = getLevelIntroduced('modulation', key);
+    const locked  = introLv > level;
+    return `<div class="theory-item${locked ? ' theory-item-future' : ''}">
+      <div class="theory-symbol" style="font-size:9px;line-height:1.3">mod</div>
+      <div class="theory-info">
+        ${theoryLvlBadge(introLv, level)}
+        <div class="theory-name">${d.name}</div>
+        <div class="theory-detail">${d.desc}</div>
+      </div>
+    </div>`;
+  }).join('');
 
   return `
     <div class="theory-section-header" onclick="toggleTheorySection(this)">
-      <div class="theory-section-title">🔄 Cadences Reference</div>
+      <div class="theory-section-title">🔄 Cadences — Complete Reference</div>
       <div class="theory-chevron">▼</div>
     </div>
-    <div class="theory-section-body">${items}</div>
+    <div class="theory-section-body">${cadItems}</div>
+    <div class="theory-section-header" onclick="toggleTheorySection(this)" style="border-top:1px solid var(--border)">
+      <div class="theory-section-title">🌍 Modulation — Complete Reference</div>
+      <div class="theory-chevron">▼</div>
+    </div>
+    <div class="theory-section-body">${modItems}</div>
   `;
 }
 
@@ -386,6 +433,10 @@ function theoryPlayInterval(sym) {
   playInterval(60, d.semitones, 'ascending');
 }
 
+function theoryPlayMelody(sym, direction) {
+  playIntervalMelody(sym, direction);
+}
+
 function theoryPlayChord(key) {
   const d = CHORD_DATA[key];
   if (!d) return;
@@ -418,10 +469,9 @@ function renderProgress(el) {
   // Metric bars
   const metricColor = (v) => v >= 90 ? 'var(--green)' : v >= 60 ? 'var(--yellow)' : 'var(--red)';
   const metrics = [
-    { label: 'Accuracy', val: scores.accuracy, weight: '35%' },
-    { label: 'Fluency', val: scores.fluency, weight: '25%' },
-    { label: 'Retention', val: scores.retention, weight: '25%' },
-    { label: 'Consistency', val: scores.consistency, weight: '15%' },
+    { label: 'Accuracy', val: scores.accuracy, weight: '40%' },
+    { label: 'Fluency', val: scores.fluency, weight: '30%' },
+    { label: 'Retention', val: scores.retention, weight: '30%' },
   ];
   const metricBars = metrics.map(m => `
     <div class="metric-row">

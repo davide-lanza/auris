@@ -47,12 +47,12 @@ function buildPianoSVG(activeMidis = [], startMidi = 60, numOctaves = 2) {
 }
 
 function buildRadarChart(scores) {
-  const { accuracy, fluency, retention, consistency } = scores;
-  const vals = [accuracy, fluency, retention, consistency].map(v => v / 100);
-  const labels = ['Accuracy', 'Fluency', 'Retention', 'Consistency'];
-  const cx = 110, cy = 110, r = 80;
-  // 4 axes: top, right, bottom, left
-  const angles = [-Math.PI/2, 0, Math.PI/2, Math.PI];
+  const { accuracy, fluency, retention } = scores;
+  const vals = [accuracy, fluency, retention].map(v => v / 100);
+  const labels = ['Accuracy', 'Fluency', 'Retention'];
+  const cx = 110, cy = 115, r = 75;
+  // 3 axes: top, bottom-right, bottom-left
+  const angles = [-Math.PI/2, -Math.PI/2 + (2*Math.PI/3), -Math.PI/2 + (4*Math.PI/3)];
 
   // Grid rings
   let gridSvg = '';
@@ -62,7 +62,7 @@ function buildRadarChart(scores) {
   });
 
   // Axes
-  let axesSvg = angles.map((a, i) =>
+  let axesSvg = angles.map(a =>
     `<line x1="${cx}" y1="${cy}" x2="${cx + r * Math.cos(a)}" y2="${cy + r * Math.sin(a)}" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>`
   ).join('');
 
@@ -79,8 +79,8 @@ function buildRadarChart(scores) {
 
   // Score text
   let scoresSvg = angles.map((a, i) => {
-    const x = cx + (r * vals[i] + 8) * Math.cos(a);
-    const y = cy + (r * vals[i] + 8) * Math.sin(a);
+    const x = cx + (r * vals[i] + 10) * Math.cos(a);
+    const y = cy + (r * vals[i] + 10) * Math.sin(a);
     const pct = Math.round(vals[i] * 100);
     return `<text x="${x}" y="${y + 4}" text-anchor="middle" font-size="10" fill="var(--gold-bright)" font-family="sans-serif" font-weight="bold">${pct}</text>`;
   }).join('');

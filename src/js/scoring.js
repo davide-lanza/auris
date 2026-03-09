@@ -71,9 +71,8 @@ function computeAreaScores(area) {
   const accuracy = computeAccuracy(answers);
   const fluency = computeFluency(answers);
   const retention = computeRetention(answers);
-  const consistency = computeConsistency(answers);
-  const overall = Math.round(accuracy * 0.35 + fluency * 0.25 + retention * 0.25 + consistency * 0.15);
-  return { accuracy, fluency, retention, consistency, overall };
+  const overall = Math.round(accuracy * 0.40 + fluency * 0.30 + retention * 0.30);
+  return { accuracy, fluency, retention, overall };
 }
 
 function computeItemScores(area) {
@@ -106,21 +105,11 @@ function checkLevelUnlock() {
   if (lvl >= 8) return false;
   const areas = getAreasByLevel(lvl);
   if (!areas.length) return false;
-  // Check all areas >= 90 for 3+ distinct days
-  const now = Date.now();
-  const msDay = 86400000;
+  // Check all areas: avg(accuracy, fluency, retention) >= 85
   for (const area of areas) {
-    const answers = getAnswersForArea(area);
-    // Get days where area overall was >= 90
-    const goodDays = new Set();
-    // Simplified: check if current overall is >= 90 and answers span 3+ days
     const scores = computeAreaScores(area);
-    if (scores.overall < 90) return false;
-    answers.forEach(a => {
-      const daysAgo = Math.floor((now - a.timestamp) / msDay);
-      if (daysAgo < 30) goodDays.add(dayKey(a.timestamp));
-    });
-    if (goodDays.size < 3) return false;
+    const avg = Math.round((scores.accuracy + scores.fluency + scores.retention) / 3);
+    if (avg < 85) return false;
   }
   return true;
 }

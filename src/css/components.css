@@ -88,6 +88,30 @@
 }
 .theory-listen-btn:active { background: var(--gold); color: #0A0912; }
 
+/* ===== MELODY BUTTONS ===== */
+.theory-mel-btns { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+.theory-mel-btn {
+  background: transparent; border: 1px solid var(--border); border-radius: 12px;
+  color: var(--gold-bright); font-size: 11px; padding: 3px 8px; cursor: pointer;
+  white-space: nowrap; max-width: 180px; overflow: hidden; text-overflow: ellipsis;
+}
+.theory-mel-btn:active { background: rgba(201,168,76,0.15); }
+
+/* ===== THEORY ITEM FUTURE ===== */
+.theory-item-future { opacity: 0.55; }
+.theory-anchor { font-size: 11px; color: var(--gold); margin-top: 3px; }
+
+/* ===== NAV UNLOCK DOT ===== */
+.nav-unlock-dot {
+  position: absolute; top: -2px; right: -4px; font-size: 11px; line-height: 1;
+  animation: pulse-dot 1.5s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.6; transform: scale(0.85); }
+}
+.nav-item { position: relative; }
+
 /* ===== UNLOCK BANNER ===== */
 .unlock-banner {
   margin: 0 16px 12px; background: linear-gradient(135deg, rgba(201,168,76,0.15), rgba(201,168,76,0.05));

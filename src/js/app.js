@@ -65,6 +65,21 @@ function updateNav(active) {
     btn.classList.toggle('active', btn.dataset.nav === active);
   });
   document.getElementById('bottom-nav').style.display = 'flex';
+  // Show unlock badge on home nav when a level is ready
+  const homeBtn = document.querySelector('.nav-item[data-nav="home"]');
+  if (homeBtn && APP.data) {
+    const existing = homeBtn.querySelector('.nav-unlock-dot');
+    if (checkLevelUnlock() && APP.data.user.currentLevel < 8) {
+      if (!existing) {
+        const dot = document.createElement('span');
+        dot.className = 'nav-unlock-dot';
+        dot.textContent = '🔓';
+        homeBtn.querySelector('.nav-icon').appendChild(dot);
+      }
+    } else if (existing) {
+      existing.remove();
+    }
+  }
 }
 
 function updateHeader(screen) {
