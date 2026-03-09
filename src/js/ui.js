@@ -1,3 +1,28 @@
+function renderUnlockGates(level) {
+  const nextLvl = Math.min(level + 1, 8);
+  if (level >= 8) return `<div class="level-unlock-wrap"><div class="level-unlock-title">🏆 Maximum level reached</div></div>`;
+  const gates = computeUnlockGates();
+  if (!gates) return '';
+  const answerPct = Math.min(gates.answers / 50, 1) * 100;
+  const scorePct  = Math.min(gates.avg / 85, 1) * 100;
+  const answerDone = gates.answers >= 50;
+  const scoreDone  = gates.avg >= 85;
+  const areaLabel  = gates.areaName ? ` <span style="font-size:11px;font-weight:400;color:var(--dim)">· ${gates.areaName}</span>` : '';
+  const barColor   = (done) => done ? 'var(--green)' : 'var(--gold)';
+  return `
+    <div class="level-unlock-wrap fade-in">
+      <div class="level-unlock-title">To unlock Level ${nextLvl} · ${LEVEL_NAMES[nextLvl]}${areaLabel}</div>
+      <div class="luc-row">
+        <div class="luc-label">Answers <strong style="color:${answerDone ? 'var(--green)' : 'var(--white)'}">${Math.min(gates.answers, 50)} / 50</strong> ${answerDone ? '✓' : ''}</div>
+        <div class="luc-bar-wrap"><div class="luc-bar" style="width:${answerPct}%;background:${barColor(answerDone)}"></div></div>
+      </div>
+      <div class="luc-row">
+        <div class="luc-label">Avg score <strong style="color:${scoreDone ? 'var(--green)' : 'var(--white)'}">${gates.avg}%</strong> / 85% ${scoreDone ? '✓' : ''}</div>
+        <div class="luc-bar-wrap"><div class="luc-bar" style="width:${scorePct}%;background:${barColor(scoreDone)}"></div></div>
+      </div>
+    </div>`;
+}
+
 // ----- HOME -----
 function renderHome(el) {
   const user = APP.data.user;
@@ -35,11 +60,7 @@ function renderHome(el) {
         <span class="home-level-text">Level ${level} · ${LEVEL_NAMES[level]}</span>
       </div>
     </div>
-    <div class="level-progress-bar-wrap">
-      <div class="level-progress-bar" style="width:${lvlProgress}%"></div>
-    </div>
-    <div class="level-progress-text">${lvlProgress}% toward Level ${Math.min(level+1,8)} · ${LEVEL_NAMES[Math.min(level+1,8)]}</div>
-    <div style="font-size:11px;color:var(--dim);margin-top:2px;text-align:center">${computeLevelProgressLabel()}</div>
+    ${renderUnlockGates(level)}
 
     ${canUnlock && level < 8 ? `
     <div class="unlock-banner fade-in">
@@ -181,6 +202,11 @@ function handleAnswer(given) {
 
   // Show feedback
   showFeedback(isCorrect, q, responseTime);
+
+  // Error comparison: play the wrong answer then the correct one
+  if (!isCorrect && APP.data.settings.playComparison !== false) {
+    playErrorComparison(q, given);
+  }
 }
 
 function showFeedback(isCorrect, q, responseTime) {
@@ -231,6 +257,7 @@ function showFeedback(isCorrect, q, responseTime) {
 }
 
 function nextQuestion() {
+  if (APP.comparisonTimer) { clearTimeout(APP.comparisonTimer); APP.comparisonTimer = null; }
   APP.lastQuestion = APP.trainQuestion;
   APP.trainQuestion = generateQuestion(APP.trainArea, APP.data.user.currentLevel);
 
@@ -614,6 +641,20 @@ function renderSettings(el) {
     </div>
 
     <div class="card">
+      <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--dim);margin-bottom:12px">Training</div>
+      <div class="settings-row" style="border-bottom:none">
+        <div>
+          <div class="settings-label">Error comparison</div>
+          <div style="font-size:12px;color:var(--dim);margin-top:2px">After a wrong answer, play your choice then the correct one</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" ${APP.data.settings.playComparison !== false ? 'checked' : ''} onchange="saveComparison(this.checked)">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="card">
       <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--dim);margin-bottom:12px">Data</div>
       <div class="settings-row">
         <div class="settings-label">Export Backup</div>
@@ -642,6 +683,11 @@ function renderSettings(el) {
     </div>
     <div class="spacer"></div>
   `;
+}
+
+function saveComparison(val) {
+  APP.data.settings.playComparison = val;
+  saveData();
 }
 
 function saveName(name) {

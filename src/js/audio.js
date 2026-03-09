@@ -141,6 +141,29 @@ function playIntervalMelody(sym, direction) {
   });
 }
 
+// Plays the wrong answer then, after a pause, the correct one.
+// Cancelled if the user taps Next before the correct plays.
+function playErrorComparison(q, given) {
+  if (!APP.sampler || !APP.audioReady) return;
+  if (q.type === 'interval') {
+    const givenSt = INTERVAL_DATA[given]?.semitones;
+    if (givenSt === undefined) return;
+    playInterval(q.rootMidi, givenSt, q.mode);
+    APP.comparisonTimer = setTimeout(() => {
+      APP.comparisonTimer = null;
+      playInterval(q.rootMidi, q.semitones, q.mode);
+    }, 2200);
+  } else if (q.type === 'chord') {
+    const givenFormula = CHORD_DATA[given]?.formula;
+    if (!givenFormula) return;
+    playChord(q.rootMidi, givenFormula);
+    APP.comparisonTimer = setTimeout(() => {
+      APP.comparisonTimer = null;
+      playChord(q.rootMidi, q.formula);
+    }, 2200);
+  }
+}
+
 function playInterval(rootMidi, semitones, mode) {
   const lower = rootMidi;
   const upper = rootMidi + semitones;
