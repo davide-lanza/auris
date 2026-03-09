@@ -118,6 +118,38 @@
 }
 .nav-item { position: relative; }
 
+/* ===== TOGGLE SWITCH ===== */
+.toggle-switch { position: relative; display: inline-block; width: 44px; height: 26px; flex-shrink: 0; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute; inset: 0; background: var(--surface2); border-radius: 26px;
+  border: 1px solid var(--border); cursor: pointer; transition: background 0.2s;
+}
+.toggle-slider:before {
+  content: ''; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px;
+  background: var(--dim); border-radius: 50%; transition: transform 0.2s, background 0.2s;
+}
+.toggle-switch input:checked + .toggle-slider { background: rgba(201,168,76,0.25); border-color: var(--gold); }
+.toggle-switch input:checked + .toggle-slider:before { transform: translateX(18px); background: var(--gold-bright); }
+
+/* ===== UNLOCK GATE BARS (Home) ===== */
+.level-unlock-wrap {
+  margin: 0 16px 12px; padding: 14px 16px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+}
+.level-unlock-title {
+  font-size: 13px; font-weight: 700; color: var(--dim);
+  letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 12px;
+}
+.luc-row { margin-bottom: 10px; }
+.luc-row:last-child { margin-bottom: 0; }
+.luc-label { font-size: 13px; color: var(--dim); margin-bottom: 5px; }
+.luc-label strong { font-weight: 700; }
+.luc-bar-wrap {
+  height: 6px; background: rgba(255,255,255,0.07); border-radius: 3px; overflow: hidden;
+}
+.luc-bar { height: 100%; border-radius: 3px; transition: width 0.4s ease; }
+
 /* ===== UNLOCK BANNER ===== */
 .unlock-banner {
   margin: 0 16px 12px; background: linear-gradient(135deg, rgba(201,168,76,0.15), rgba(201,168,76,0.05));

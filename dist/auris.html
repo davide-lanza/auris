@@ -172,6 +172,38 @@ html, body {
 }
 .nav-item { position: relative; }
 
+/* ===== TOGGLE SWITCH ===== */
+.toggle-switch { position: relative; display: inline-block; width: 44px; height: 26px; flex-shrink: 0; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute; inset: 0; background: var(--surface2); border-radius: 26px;
+  border: 1px solid var(--border); cursor: pointer; transition: background 0.2s;
+}
+.toggle-slider:before {
+  content: ''; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px;
+  background: var(--dim); border-radius: 50%; transition: transform 0.2s, background 0.2s;
+}
+.toggle-switch input:checked + .toggle-slider { background: rgba(201,168,76,0.25); border-color: var(--gold); }
+.toggle-switch input:checked + .toggle-slider:before { transform: translateX(18px); background: var(--gold-bright); }
+
+/* ===== UNLOCK GATE BARS (Home) ===== */
+.level-unlock-wrap {
+  margin: 0 16px 12px; padding: 14px 16px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+}
+.level-unlock-title {
+  font-size: 13px; font-weight: 700; color: var(--dim);
+  letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 12px;
+}
+.luc-row { margin-bottom: 10px; }
+.luc-row:last-child { margin-bottom: 0; }
+.luc-label { font-size: 13px; color: var(--dim); margin-bottom: 5px; }
+.luc-label strong { font-weight: 700; }
+.luc-bar-wrap {
+  height: 6px; background: rgba(255,255,255,0.07); border-radius: 3px; overflow: hidden;
+}
+.luc-bar { height: 100%; border-radius: 3px; transition: width 0.4s ease; }
+
 /* ===== UNLOCK BANNER ===== */
 .unlock-banner {
   margin: 0 16px 12px; background: linear-gradient(135deg, rgba(201,168,76,0.15), rgba(201,168,76,0.05));
@@ -979,7 +1011,7 @@ function defaultData() {
   return {
     user: { name: '', currentLevel: 1, unlockedLevels: [1], onboardingComplete: false, createdAt: Date.now() },
     answers: [],
-    settings: {}
+    settings: { playComparison: true }
   };
 }
 
@@ -1142,6 +1174,29 @@ function playIntervalMelody(sym, direction) {
     try { APP.sampler.triggerAttackRelease(note, secs * 0.9, now + t); } catch (_) {}
     t += secs;
   });
+}
+
+// Plays the wrong answer then, after a pause, the correct one.
+// Cancelled if the user taps Next before the correct plays.
+function playErrorComparison(q, given) {
+  if (!APP.sampler || !APP.audioReady) return;
+  if (q.type === 'interval') {
+    const givenSt = INTERVAL_DATA[given]?.semitones;
+    if (givenSt === undefined) return;
+    playInterval(q.rootMidi, givenSt, q.mode);
+    APP.comparisonTimer = setTimeout(() => {
+      APP.comparisonTimer = null;
+      playInterval(q.rootMidi, q.semitones, q.mode);
+    }, 2200);
+  } else if (q.type === 'chord') {
+    const givenFormula = CHORD_DATA[given]?.formula;
+    if (!givenFormula) return;
+    playChord(q.rootMidi, givenFormula);
+    APP.comparisonTimer = setTimeout(() => {
+      APP.comparisonTimer = null;
+      playChord(q.rootMidi, q.formula);
+    }, 2200);
+  }
 }
 
 function playInterval(rootMidi, semitones, mode) {
@@ -1334,6 +1389,30 @@ function checkLevelUnlock() {
     if (avg < 85) return false;
   }
   return true;
+}
+
+// Returns the two raw unlock conditions for the bottleneck area — used by the home screen.
+function computeUnlockGates() {
+  const lvl = APP.data.user.currentLevel;
+  if (lvl >= 8) return null;
+  const areas = getAreasByLevel(lvl);
+  if (!areas.length) return null;
+  let worstArea = areas[0], worstP = Infinity;
+  areas.forEach(area => {
+    const answers = getAnswersForArea(area);
+    const s = computeAreaScores(area);
+    const avg = (s.accuracy + s.fluency + s.retention) / 3;
+    const p = Math.min(answers.length / 50, 1) + Math.min(avg / 85, 1);
+    if (p < worstP) { worstP = p; worstArea = area; }
+  });
+  const answers = getAnswersForArea(worstArea);
+  const s = computeAreaScores(worstArea);
+  const avg = Math.round((s.accuracy + s.fluency + s.retention) / 3);
+  return {
+    areaName:  areas.length > 1 ? AREA_CONFIG[worstArea].name : null,
+    answers:   answers.length,
+    avg,
+  };
 }
 
 function getAreasByLevel(level) {
@@ -1755,6 +1834,31 @@ function buildRollingAccuracyChart(area) {
 
 
 /* === js/ui.js === */
+function renderUnlockGates(level) {
+  const nextLvl = Math.min(level + 1, 8);
+  if (level >= 8) return `<div class="level-unlock-wrap"><div class="level-unlock-title">🏆 Maximum level reached</div></div>`;
+  const gates = computeUnlockGates();
+  if (!gates) return '';
+  const answerPct = Math.min(gates.answers / 50, 1) * 100;
+  const scorePct  = Math.min(gates.avg / 85, 1) * 100;
+  const answerDone = gates.answers >= 50;
+  const scoreDone  = gates.avg >= 85;
+  const areaLabel  = gates.areaName ? ` <span style="font-size:11px;font-weight:400;color:var(--dim)">· ${gates.areaName}</span>` : '';
+  const barColor   = (done) => done ? 'var(--green)' : 'var(--gold)';
+  return `
+    <div class="level-unlock-wrap fade-in">
+      <div class="level-unlock-title">To unlock Level ${nextLvl} · ${LEVEL_NAMES[nextLvl]}${areaLabel}</div>
+      <div class="luc-row">
+        <div class="luc-label">Answers <strong style="color:${answerDone ? 'var(--green)' : 'var(--white)'}">${Math.min(gates.answers, 50)} / 50</strong> ${answerDone ? '✓' : ''}</div>
+        <div class="luc-bar-wrap"><div class="luc-bar" style="width:${answerPct}%;background:${barColor(answerDone)}"></div></div>
+      </div>
+      <div class="luc-row">
+        <div class="luc-label">Avg score <strong style="color:${scoreDone ? 'var(--green)' : 'var(--white)'}">${gates.avg}%</strong> / 85% ${scoreDone ? '✓' : ''}</div>
+        <div class="luc-bar-wrap"><div class="luc-bar" style="width:${scorePct}%;background:${barColor(scoreDone)}"></div></div>
+      </div>
+    </div>`;
+}
+
 // ----- HOME -----
 function renderHome(el) {
   const user = APP.data.user;
@@ -1792,11 +1896,7 @@ function renderHome(el) {
         <span class="home-level-text">Level ${level} · ${LEVEL_NAMES[level]}</span>
       </div>
     </div>
-    <div class="level-progress-bar-wrap">
-      <div class="level-progress-bar" style="width:${lvlProgress}%"></div>
-    </div>
-    <div class="level-progress-text">${lvlProgress}% toward Level ${Math.min(level+1,8)} · ${LEVEL_NAMES[Math.min(level+1,8)]}</div>
-    <div style="font-size:11px;color:var(--dim);margin-top:2px;text-align:center">${computeLevelProgressLabel()}</div>
+    ${renderUnlockGates(level)}
 
     ${canUnlock && level < 8 ? `
     <div class="unlock-banner fade-in">
@@ -1938,6 +2038,11 @@ function handleAnswer(given) {
 
   // Show feedback
   showFeedback(isCorrect, q, responseTime);
+
+  // Error comparison: play the wrong answer then the correct one
+  if (!isCorrect && APP.data.settings.playComparison !== false) {
+    playErrorComparison(q, given);
+  }
 }
 
 function showFeedback(isCorrect, q, responseTime) {
@@ -1988,6 +2093,7 @@ function showFeedback(isCorrect, q, responseTime) {
 }
 
 function nextQuestion() {
+  if (APP.comparisonTimer) { clearTimeout(APP.comparisonTimer); APP.comparisonTimer = null; }
   APP.lastQuestion = APP.trainQuestion;
   APP.trainQuestion = generateQuestion(APP.trainArea, APP.data.user.currentLevel);
 
@@ -2371,6 +2477,20 @@ function renderSettings(el) {
     </div>
 
     <div class="card">
+      <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--dim);margin-bottom:12px">Training</div>
+      <div class="settings-row" style="border-bottom:none">
+        <div>
+          <div class="settings-label">Error comparison</div>
+          <div style="font-size:12px;color:var(--dim);margin-top:2px">After a wrong answer, play your choice then the correct one</div>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" ${APP.data.settings.playComparison !== false ? 'checked' : ''} onchange="saveComparison(this.checked)">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="card">
       <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--dim);margin-bottom:12px">Data</div>
       <div class="settings-row">
         <div class="settings-label">Export Backup</div>
@@ -2399,6 +2519,11 @@ function renderSettings(el) {
     </div>
     <div class="spacer"></div>
   `;
+}
+
+function saveComparison(val) {
+  APP.data.settings.playComparison = val;
+  saveData();
 }
 
 function saveName(name) {

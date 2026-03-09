@@ -2,7 +2,7 @@ function defaultData() {
   return {
     user: { name: '', currentLevel: 1, unlockedLevels: [1], onboardingComplete: false, createdAt: Date.now() },
     answers: [],
-    settings: {}
+    settings: { playComparison: true }
   };
 }
 

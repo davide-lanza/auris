@@ -143,6 +143,30 @@ function checkLevelUnlock() {
   return true;
 }
 
+// Returns the two raw unlock conditions for the bottleneck area — used by the home screen.
+function computeUnlockGates() {
+  const lvl = APP.data.user.currentLevel;
+  if (lvl >= 8) return null;
+  const areas = getAreasByLevel(lvl);
+  if (!areas.length) return null;
+  let worstArea = areas[0], worstP = Infinity;
+  areas.forEach(area => {
+    const answers = getAnswersForArea(area);
+    const s = computeAreaScores(area);
+    const avg = (s.accuracy + s.fluency + s.retention) / 3;
+    const p = Math.min(answers.length / 50, 1) + Math.min(avg / 85, 1);
+    if (p < worstP) { worstP = p; worstArea = area; }
+  });
+  const answers = getAnswersForArea(worstArea);
+  const s = computeAreaScores(worstArea);
+  const avg = Math.round((s.accuracy + s.fluency + s.retention) / 3);
+  return {
+    areaName:  areas.length > 1 ? AREA_CONFIG[worstArea].name : null,
+    answers:   answers.length,
+    avg,
+  };
+}
+
 function getAreasByLevel(level) {
   return Object.entries(AREA_CONFIG)
     .filter(([, cfg]) => cfg.unlockLevel <= level)
