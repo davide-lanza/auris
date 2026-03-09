@@ -115,7 +115,9 @@ function step2_buildEmbeddedSamplesJS() {
 }
 
 async function step3_assemble(samplesJS) {
-  console.log('\n[3/3] Assembling dist/auris.html');
+  const version = require(path.join(root, 'package.json')).version;
+  const outName = `auris-v${version}.html`;
+  console.log(`\n[3/3] Assembling dist/${outName}`);
 
   const css = CSS_FILES.map(f =>
     `/* === ${f} === */\n${fs.readFileSync(path.join(srcDir, f), 'utf8')}`
@@ -133,12 +135,17 @@ async function step3_assemble(samplesJS) {
   html = html.replace('{{JS}}',  fullJS);
 
   if (!fs.existsSync(distDir)) fs.mkdirSync(distDir, { recursive: true });
-  const outPath = path.join(distDir, 'auris.html');
-  fs.writeFileSync(outPath, html, 'utf8');
+
+  // Write versioned file and keep auris.html as a stable alias
+  const outPath     = path.join(distDir, outName);
+  const aliasPath   = path.join(distDir, 'auris.html');
+  fs.writeFileSync(outPath,   html, 'utf8');
+  fs.writeFileSync(aliasPath, html, 'utf8');
 
   const sizeMB = (fs.statSync(outPath).size / (1024 * 1024)).toFixed(2);
-  console.log(`  Output: dist/auris.html — ${sizeMB} MB`);
-  return sizeMB;
+  console.log(`  Output: dist/${outName} — ${sizeMB} MB`);
+  console.log(`  Alias:  dist/auris.html`);
+  return { sizeMB, outName };
 }
 
 // ── MAIN ───────────────────────────────────────────────────────
@@ -146,11 +153,12 @@ async function build() {
   console.log('Auris Build\n===========');
 
   await step1_downloadSamples();
-  const samplesJS = step2_buildEmbeddedSamplesJS();
-  const sizeMB    = await step3_assemble(samplesJS);
+  const samplesJS          = step2_buildEmbeddedSamplesJS();
+  const { sizeMB, outName } = await step3_assemble(samplesJS);
 
-  console.log(`\n✓ Build complete — dist/auris.html (${sizeMB} MB)`);
-  console.log('  Open dist/auris.html on any device — works fully offline.\n');
+  console.log(`\n✓ Build complete — dist/${outName} (${sizeMB} MB)`);
+  console.log('  dist/auris.html also updated (stable download alias).');
+  console.log('  Open either file on any device — works fully offline.\n');
 }
 
 build().catch(err => {
