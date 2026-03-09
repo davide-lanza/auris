@@ -94,7 +94,23 @@ The Theory tab is a complete reference for the **entire curriculum across all 8 
 
 ## Version History
 
-### v1.4 — 9 March 2026 (current)
+### v1.5 — 9 March 2026 (current)
+
+**Labelled error comparison:**
+- The comparison playback now shows a clear visual label in the feedback card:
+  `▶ You: Minor 3rd  →  Correct: Perfect 4th`
+- The active sound is highlighted in gold so you always know which one is playing at any moment
+- When the first sound ends and the correct one starts, the highlight shifts automatically
+- Tapping Next also stops any in-progress comparison sound immediately
+
+**Versioned build output:**
+- The build now produces `dist/auris-v1.5.0.html` (versioned) alongside `dist/auris.html` (stable alias)
+- The version comes from `package.json` — bumping the version there is all that is needed for future releases
+- Both files are identical; share whichever is clearest for the context
+
+---
+
+### v1.4 — 9 March 2026
 
 **Error comparison:**
 - New toggle in Settings › Training: **"Error comparison"** (default: on)

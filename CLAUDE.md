@@ -17,11 +17,15 @@ Standing rules that apply to every session, regardless of what is being changed.
 
 ## Build before committing
 
-Always run `node build.js` after editing any source file and before committing. The distributable is `dist/auris.html` — it must always be in sync with the source.
+Always run `node build.js` after editing any source file and before committing. The build produces two files:
+- `dist/auris-vX.Y.Z.html` — versioned, named from `package.json`
+- `dist/auris.html` — stable alias, always identical to the versioned file
 
 ```bash
 node build.js
 ```
+
+When releasing a meaningful new version, bump `"version"` in `package.json` before building so the filename reflects the new version.
 
 ---
 

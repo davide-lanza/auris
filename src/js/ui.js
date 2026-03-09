@@ -203,10 +203,34 @@ function handleAnswer(given) {
   // Show feedback
   showFeedback(isCorrect, q, responseTime);
 
-  // Error comparison: play the wrong answer then the correct one
+  // Error comparison: play the wrong answer then the correct one, with visual labels
   if (!isCorrect && APP.data.settings.playComparison !== false) {
-    playErrorComparison(q, given);
+    const givenLabel   = getAnswerLabel(APP.trainArea, given);
+    const correctLabel = getAnswerLabel(APP.trainArea, correct);
+    const fbCard = document.getElementById('feedback-card');
+    if (fbCard) {
+      fbCard.insertAdjacentHTML('beforeend', `
+        <div class="comparison-status" id="comparison-status">
+          <span class="cmp-step cmp-active" id="cmp-yours">▶ You: ${givenLabel}</span>
+          <span class="cmp-sep">→</span>
+          <span class="cmp-step" id="cmp-correct">Correct: ${correctLabel}</span>
+        </div>`);
+    }
+    playErrorComparison(q, given, () => {
+      const yours = document.getElementById('cmp-yours');
+      const corr  = document.getElementById('cmp-correct');
+      if (yours) yours.classList.remove('cmp-active');
+      if (corr)  corr.classList.add('cmp-active');
+    });
   }
+}
+
+function getAnswerLabel(area, key) {
+  if (area === 'intervals')  return INTERVAL_DATA[key]?.name   || key;
+  if (area === 'chords')     return CHORD_DATA[key]?.name      || key;
+  if (area === 'cadences')   return CADENCE_DATA[key]?.name    || key;
+  if (area === 'modulation') return MODULATION_DATA[key]?.name || key;
+  return key;
 }
 
 function showFeedback(isCorrect, q, responseTime) {
@@ -258,6 +282,7 @@ function showFeedback(isCorrect, q, responseTime) {
 
 function nextQuestion() {
   if (APP.comparisonTimer) { clearTimeout(APP.comparisonTimer); APP.comparisonTimer = null; }
+  if (APP.sampler) { try { APP.sampler.releaseAll(); } catch(_) {} }
   APP.lastQuestion = APP.trainQuestion;
   APP.trainQuestion = generateQuestion(APP.trainArea, APP.data.user.currentLevel);
 
